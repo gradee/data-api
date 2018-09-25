@@ -4,6 +4,7 @@ const luxon = require('luxon')
 const request = require('request')
 const pdfp = require('pdf2json')
 const async = require('async')
+const moment = require('moment')
 
 // Helpers
 const factory = require('./factory')
@@ -740,11 +741,43 @@ function Nova() {
     })
   }
 
+  function getSchoolNovaMetaData(school) {
+    return new Promise((resolve, reject) => {
+      request(factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
+        if (error) return reject(error)
+        
+        const strStart = '<span id="CounterLabel">'
+        body = body.substring(body.indexOf(strStart) + strStart.length, body.length)
+        body = body.substring(0, body.indexOf('</span>'))
+
+        const dates = {}
+        body.split('<br>').forEach((str, i) => {
+          dates[i ? 'published' : 'updated'] = str.substring(str.length - 19, str.length)
+        })
+        
+        resolve(dates)
+      })
+    })
+  }
+
+  function checkSchoolNovaDataUpdate(school, force = false) {
+    return new Promise((resolve, reject) => {
+      if (force) return resolve(true)
+      
+      const lastUpdate = moment(school.novaDataUpdatedAt)
+      getSchoolNovaMetaData(school).then(metaData => {
+        const updatedOn = moment(metaData.updated)
+        resolve(updatedOn.isAfter(lastUpdate))
+      }).catch(error => reject(error))
+    })
+  }
+
   return {
     scheduleTypes,
     parseLessonData,
     downloadSchedule,
-    downloadSchoolNovaData
+    downloadSchoolNovaData,
+    checkSchoolNovaDataUpdate
   }
 }
 

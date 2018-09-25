@@ -35,7 +35,9 @@ function Parser() {
       }
 
       name = (className) ? className + ' ' + name:name
-      if (name.indexOf(';') > -1) name = name.replace(';', '')
+      while (name.indexOf(';') > -1) {
+        name = name.replace(';', '')
+      }
 
       return {
         // id: id,

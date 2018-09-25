@@ -37,6 +37,12 @@ module.exports = (connection, DataTypes) => {
     }
   }, {
     tableName: 'schedules',
-    timestamps: true
+    timestamps: true,
+    indexes: [
+      {
+        unique: true,
+        fields: [ 'schedule_id' ]
+      }
+    ]
   })
 }

@@ -2,6 +2,7 @@
 const router = require('express').Router()
 const Op = require('sequelize').Op
 const async = require('async')
+const moment = require('moment')
 
 // Models
 const models = require(appRoot + '/models')
@@ -44,13 +45,13 @@ function saveSchoolNovaData(school, types) {
     async.each(types, (type, callback) => {
       // Go through all schedules
       async.each(type.schedules, (schedule, cb) => {
-        models.Schedule.create({
+        models.Schedule.upsert({
           schoolId: school.id,
           typeKey: type.key,
           scheduleId: schedule.id,
           name: schedule.name
         })
-        .then(schedule => cb())
+        .then(_ => cb())
         .catch(error => cb(error))
       }, (error) => {
         if (error) return callback(error)
@@ -60,15 +61,15 @@ function saveSchoolNovaData(school, types) {
     }, (error) => {
       if (error) return reject(error)
 
-      resolve()
-    })
-  })
-}
-
-function downloadSchoolNovaData(school) {
-  nova.downloadSchoolNovaData(school).then(data => {
-    saveSchoolNovaData(school, data).then(_ => {
-      console.log('School nova data downloaded. :)')
+      models.School.update({
+        novaDataUpdatedAt: moment().format('YYYY-MM-DD HH:mm:ss')
+      },{
+        where: {
+          id: school.id
+        }
+      }).then(_ => {
+        resolve()
+      }).catch(error => reject(error))
     })
   })
 }
@@ -107,6 +108,29 @@ router.get('/:schoolSlug', (req, res) => {
       }
 
       res.json(data)
+    })
+  })
+})
+
+router.post('/:schoolSlug/update', (req, res) => {
+  if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
+  
+  models.School.findOne({
+    where: {
+      slug: req.params.schoolSlug
+    }
+  }).then(school => {
+    if (!school) return res.status(404).send('Not found.')
+
+    const force = req.body.hasOwnProperty('force') ? req.body.force : false
+    nova.checkSchoolNovaDataUpdate(school, force).then(updateAvailable => {
+      if (!updateAvailable) return res.send('Nova data is up to date.')
+
+      nova.downloadSchoolNovaData(school).then(data => {
+        saveSchoolNovaData(school, data).then(_ => {
+          res.send('Nova data updated.')
+        })
+      })
     })
   })
 })
@@ -168,9 +192,13 @@ router.post('/', (req, res) => {
       novaId: req.body.novaId,
       novaCode: req.body.novaCode
     }).then(school => {
-      downloadSchoolNovaData(school)
-      
-      res.json({ success: true })
+
+      nova.downloadSchoolNovaData(school).then(data => {
+        saveSchoolNovaData(school, data).then(_ => {
+          res.json({ success: true })
+        })
+      })
+
     })
   })
 })
