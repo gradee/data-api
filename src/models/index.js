@@ -31,6 +31,7 @@ files.forEach((file) => {
  * Declare all relationships.
  */
 m.School.hasMany(m.Schedule, { as: 'schedules', foreignKey: 'school_id' })
+m.Schedule.belongsTo(m.School, { foreignKey: 'school_id' })
  
 
 /**

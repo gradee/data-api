@@ -5,6 +5,7 @@ const request = require('request')
 const pdfp = require('pdf2json')
 const async = require('async')
 const moment = require('moment')
+const crypto = require('crypto')
 
 // Helpers
 const factory = require('./factory')
@@ -598,7 +599,7 @@ function Nova() {
         form: {
           '__EVENTTARGET': 'NovaschemWebViewer2',
           '__EVENTARGUMENT': 'MapClick|' + x + '|' + y + '|' + width + '|' + height,
-          'ScheduleIDDropDownList': params.scheduleId,
+          'ScheduleIDDropDownList': '{' + params.id + '}',
           'WeekDropDownList': params.week
         }
       }
@@ -643,11 +644,11 @@ function Nova() {
       // Click schedule width height ration: 536 x 784
 
       // First build the custom "fake" connection to the site.
-      factory.buildLessonDataUrl({
-        schoolId: params.schoolId,
-        schoolCode: params.schoolCode,
-        scheduleId: params.scheduleId,
-        scheduleType: params.scheduleType,
+      factory.generateLessonDataUrl({
+        novaId: params.novaId,
+        novaCode: params.novaCode,
+        id: '{' + params.id + '}',
+        typeKey: params.typeKey,
         week: params.week
       }).then(url => {
         let downloaded = 0
@@ -657,11 +658,9 @@ function Nova() {
           // Get the table data of the lesson.
           downloadLessonData(lesson, url, params).then(table => {
             downloaded++;
-            console.log('Lessons downloaded: ' + downloaded + ', of ' + lessons.length + ' in total.')
-
             if (table) lesson.table = table
             callback()
-          }).catch(error => callback(error))
+          }).catch(error => reject(error))
         }, (error) => {
           if (error) return reject(error)
 
@@ -688,20 +687,28 @@ function Nova() {
 
       // Generate the schedule's PDF url
       const pdfUrl = factory.generateNovaPdfUrl({
-        schoolId: params.schoolId,
-        scheduleType: params.scheduleType,
-        scheduleId: params.scheduleId,
+        novaId: params.novaId,
+        typeKey: params.typeKey,
+        id: '{' + params.id + '}',
         week: params.week,
         disrupt: true
       })
 
       // Download the raw PDF data for the schedule.
-      downloadPdfSchedule(pdfUrl)
-        // Parse the raw PDF data to initial lesson data.
-        .then(rawData => parsePdfSchedule(rawData))
-        .then(lessons => getLessonData(params, lessons))
-        .then(results => resolve(results))
-      .catch(error => reject(error))
+      downloadPdfSchedule(pdfUrl).then(rawData => {
+        // Create a checksum to store and compare a potential update to, to see if anything has changed.
+        const checksum = crypto.createHash('sha256').update(JSON.stringify(rawData.formImage.Pages)).digest('hex')
+
+        // Parse the raw PDF data to get the lesson frames.
+        const bareLessons = parsePdfSchedule(rawData)
+        getLessonData(params, bareLessons).then(results => {
+          // Download and parse all lesson data based on the PDF data.
+          resolve({
+            checksum: checksum,
+            data: results
+          })
+        }).catch(error => reject(error))
+      }).catch(error => reject(error))
 
     })
   }

@@ -6,6 +6,18 @@ module.exports = (connection, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
+    scheduleId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    scheduleWeekId: {
+      type: DataTypes.INTEGER,
+      allowNull: false
+    },
+    title: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,

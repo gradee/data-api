@@ -15,7 +15,7 @@ function Factory() {
         url: params.url,
         form: {
           '__EVENTTARGET': 'TypeDropDownList',
-          'TypeDropDownList': params.scheduleType,
+          'TypeDropDownList': params.typeKey,
           'WeekDropDownList': params.week
         }
       },
@@ -33,7 +33,7 @@ function Factory() {
         url: params.url,
         form: {
           '__EVENTTARGET': 'ScheduleIDDropDownList',
-          'ScheduleIDDropDownList': params.scheduleId,
+          'ScheduleIDDropDownList': params.id,
           'WeekDropDownList': params.week
         }
       },
@@ -56,9 +56,9 @@ function Factory() {
   function generateNovaPdfUrl(params) {
     // Params: (schoolId, scheduleType, scheduleId, week, disrupt = false)
     let url = novaPdfBaseUrl
-    url += '&schoolid=' + params.schoolId
-    url += '&type=' + params.scheduleType
-    url += '&id=' + params.scheduleId
+    url += '&schoolid=' + params.novaId
+    url += '&type=' + params.typeKey
+    url += '&id=' + params.id
     url += '&week=' + params.week
     url += '&period=&mode=0&colors=32&width=2480&height=3500'
     if (!params.disrupt) url += '&printer=1'
@@ -71,16 +71,16 @@ function Factory() {
     return new Promise((resolve, reject) => {
       // Params: (schoolId, schoolCode, scheduleId, scheduleType, week)
 
-      request(generateNovaBaseUrl(params), (err, res, body) => {
+      request(generateNovaBaseUrl(params.novaId, params.novaCode, params.typeKey), (err, res, body) => {
         const urlId = body.substring(body.indexOf('<input name="PrinterDialogUrl" type="hidden" id="PrinterDialogUrl" value="') + 85, body.indexOf('/printerdialog.aspx" />'));
 
         let url = ''
         url += 'http://www.novasoftware.se/webviewer/' + urlId + '/MZDesign1.aspx'
-        url += '?schoolid=' + params.schoolId
-        url += '&code=' + params.schoolCode
+        url += '?schoolid=' + params.novaId
+        url += '&code=' + params.novaCode
 
-        fakeTypePost({ url: url, scheduleType: params.scheduleType, week: params.week })
-          .then(() => fakeSchedulePost({ url: url, scheduleId: params.scheduleId, week: params.week }))
+        fakeTypePost({ url: url, typeKey: params.typeKey, week: params.week })
+          .then(() => fakeSchedulePost({ url: url, scheduleId: params.id, week: params.week }))
           .then(() => resolve(url))
         .catch((error) => reject(error))
       })

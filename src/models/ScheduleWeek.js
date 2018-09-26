@@ -6,6 +6,20 @@ module.exports = (connection, DataTypes) => {
       primaryKey: true,
       autoIncrement: true
     },
+    scheduleId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: 'schedule_id'
+    },
+    weekNumber: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: 'week_number'
+    },
+    checksum: {
+      type: DataTypes.STRING,
+      allowNull: false
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
@@ -17,7 +31,7 @@ module.exports = (connection, DataTypes) => {
       field: 'updated_at'
     }
   }, {
-    tableName: 'schedule_week',
+    tableName: 'schedule_weeks',
     timestamps: true
   })
 }
