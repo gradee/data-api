@@ -350,7 +350,10 @@ function Nova() {
       // Extract the lesson info based on the previously
       // parsed lesson, that is if there is none, and if so
       // if it was also a multi type lesson.
-      const row = (lastLesson.type === 'multi' && lastLesson.table === lesson.table) ? 1:0
+      let row = 0
+      if (lastLesson.type) {
+        row = (lastLesson.type === 'multi' && lastLesson.table === lesson.table) ? 1:0
+      }
       parsed = parseTableTimeRow(rows[row])
       parsed.type = 'multi'
     } else if (rows[0].indexOf('Block:') > -1) {
@@ -654,7 +657,7 @@ function Nova() {
           // Get the table data of the lesson.
           downloadLessonData(lesson, url, params).then(table => {
             downloaded++;
-            console.log('Lessonds downloaded: ' + downloaded + ', of ' + lessons.length + ' in total.')
+            console.log('Lessons downloaded: ' + downloaded + ', of ' + lessons.length + ' in total.')
 
             if (table) lesson.table = table
             callback()
@@ -663,8 +666,7 @@ function Nova() {
           if (error) return reject(error)
 
           lessons = parseLessonData(lessons, params)
-
-          console.log(lessons)
+          resolve(lessons)
         })
       }).catch(error => reject(error))
     })
@@ -698,13 +700,8 @@ function Nova() {
         // Parse the raw PDF data to initial lesson data.
         .then(rawData => parsePdfSchedule(rawData))
         .then(lessons => getLessonData(params, lessons))
-        .then(results => {
-
-        })
-      .catch(error => {
-        console.log('Schedule download failed.')
-        console.log(error)
-      })
+        .then(results => resolve(results))
+      .catch(error => reject(error))
 
     })
   }

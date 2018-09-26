@@ -16,10 +16,9 @@ module.exports = (connection, DataTypes) => {
       allowNull: false,
       field: 'type_key'
     },
-    scheduleId: {
+    uuid: {
       type: DataTypes.STRING,
-      allowNull: false,
-      field: 'schedule_id'
+      allowNull: false
     },
     name: {
       type: DataTypes.STRING,
@@ -41,7 +40,7 @@ module.exports = (connection, DataTypes) => {
     indexes: [
       {
         unique: true,
-        fields: [ 'schedule_id' ]
+        fields: [ 'uuid' ]
       }
     ]
   })

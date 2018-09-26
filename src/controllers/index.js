@@ -11,6 +11,8 @@ const models = require(appRoot + '/models')
 const validator = require('../helpers/validator')
 const nova = require('../helpers/nova')
 
+router.use('/schedule', require('./schedule'))
+
 function schoolPropsAreUnique(data) {
   return new Promise((resolve, reject) => {
     models.School.findOne({
@@ -48,7 +50,7 @@ function saveSchoolNovaData(school, types) {
         models.Schedule.upsert({
           schoolId: school.id,
           typeKey: type.key,
-          scheduleId: schedule.id,
+          uuid: schedule.id.replace('{', '').replace('}', ''),
           name: schedule.name
         })
         .then(_ => cb())
@@ -84,6 +86,7 @@ router.get('/:schoolSlug', (req, res) => {
 
     school.getSchedules().then(schedules => {
       const data = {
+        name: school.name,
         schedules: 0,
         types: []
       }
@@ -159,9 +162,10 @@ router.get('/:schoolSlug/:typeSlug', (req, res) => {
         schoolId: school.id,
         typeKey: typeKey
       },
-      attributes: [['schedule_id', 'id'], 'name'],
+      attributes: [['uuid', 'id'], 'name'],
       raw: true
     }).then(schedules => {
+
       res.json(schedules)
     })
   })
