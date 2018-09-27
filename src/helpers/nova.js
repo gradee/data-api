@@ -410,7 +410,6 @@ function Nova() {
         parsed.texts = rows[0].substring(4, rows[0].length - 5).split('</td><td>')
         parsed.title = parsed.texts.splice(0, 1)[0]
       } else {
-        console.log(lesson)
         // Well ok, now we have to work some magic to determine which row
         // is most likely this particular lesson's data row.
 
@@ -438,6 +437,12 @@ function Nova() {
             filtered: rowTexts
           })
         })
+
+        console.log(lesson)
+        console.log(rows)
+        console.log(filteredRows)
+        console.log(rows.length)
+        console.log(filteredRows.length)
 
         // Now go through the filtered rows of texts, to find out if
         // they differ in length. Because if they do, it means one of
