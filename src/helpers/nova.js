@@ -410,6 +410,7 @@ function Nova() {
         parsed.texts = rows[0].substring(4, rows[0].length - 5).split('</td><td>')
         parsed.title = parsed.texts.splice(0, 1)[0]
       } else {
+        console.log(lesson)
         // Well ok, now we have to work some magic to determine which row
         // is most likely this particular lesson's data row.
 
@@ -490,9 +491,9 @@ function Nova() {
     return parsed
   }
 
-  function parseLessonData(lessons, params) {
+  function parseLessonData(lessons, week) {
     let dt = luxon.DateTime.local()
-    dt = dt.set({ weekNumber: params.week, seconds: 0 })
+    dt = dt.set({ weekNumber: week, seconds: 0 })
 
     // Great, now all lessons have table data.
     // Now we have to batch them into the days they occur.
@@ -580,7 +581,7 @@ function Nova() {
    * Download methods
    */
 
-  function downloadLessonData(lesson, url, params) {
+  function downloadLessonData(lesson, url, scheduleUuid, week) {
     return new Promise((resolve, reject) => {
       // Calculate the X and Y of the click position,
       // by multiplying the lessons positions by 16 (PDF rendering is 1/16)
@@ -599,8 +600,8 @@ function Nova() {
         form: {
           '__EVENTTARGET': 'NovaschemWebViewer2',
           '__EVENTARGUMENT': 'MapClick|' + x + '|' + y + '|' + width + '|' + height,
-          'ScheduleIDDropDownList': '{' + params.id + '}',
-          'WeekDropDownList': params.week
+          'ScheduleIDDropDownList': '{' + scheduleUuid + '}',
+          'WeekDropDownList': week
         }
       }
 
@@ -639,24 +640,24 @@ function Nova() {
     })
   }
 
-  function getLessonData(params, lessons) {
+  function getLessonData(lessons, schedule, school, week) {
     return new Promise((resolve, reject) => {
       // Click schedule width height ration: 536 x 784
 
       // First build the custom "fake" connection to the site.
       factory.generateLessonDataUrl({
-        novaId: params.novaId,
-        novaCode: params.novaCode,
-        id: '{' + params.id + '}',
-        typeKey: params.typeKey,
-        week: params.week
+        novaId: school.novaId,
+        novaCode: school.novaCode,
+        id: '{' + schedule.uuid + '}',
+        typeKey: schedule.typeKey,
+        week: week
       }).then(url => {
         let downloaded = 0
 
         // Now that we have a fake connection to novascheme, let's download all lessons by faking a click event.
         async.eachSeries(lessons, (lesson, callback) => {
           // Get the table data of the lesson.
-          downloadLessonData(lesson, url, params).then(table => {
+          downloadLessonData(lesson, url, schedule.uuid, week).then(table => {
             downloaded++;
             if (table) lesson.table = table
             callback()
@@ -664,14 +665,15 @@ function Nova() {
         }, (error) => {
           if (error) return reject(error)
 
-          lessons = parseLessonData(lessons, params)
-          resolve(lessons)
+          resolve(
+            parseLessonData(lessons, week)
+          )
         })
       }).catch(error => reject(error))
     })
   }
 
-  function downloadSchedule(params) {
+  function downloadSchedule(schedule, school, week) {
     return new Promise((resolve, reject) => {
       /**
        *
@@ -686,13 +688,7 @@ function Nova() {
        */
 
       // Generate the schedule's PDF url
-      const pdfUrl = factory.generateNovaPdfUrl({
-        novaId: params.novaId,
-        typeKey: params.typeKey,
-        id: '{' + params.id + '}',
-        week: params.week,
-        disrupt: true
-      })
+      const pdfUrl = factory.generateNovaPdfUrl(school.novaId, schedule.typeKey, '{' + schedule.uuid + '}', week, true)
 
       // Download the raw PDF data for the schedule.
       downloadPdfSchedule(pdfUrl).then(rawData => {
@@ -701,7 +697,7 @@ function Nova() {
 
         // Parse the raw PDF data to get the lesson frames.
         const bareLessons = parsePdfSchedule(rawData)
-        getLessonData(params, bareLessons).then(results => {
+        getLessonData(bareLessons, schedule, school, week).then(results => {
           // Download and parse all lesson data based on the PDF data.
           resolve({
             checksum: checksum,

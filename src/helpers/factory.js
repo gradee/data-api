@@ -53,15 +53,15 @@ function Factory() {
     return url
   }
 
-  function generateNovaPdfUrl(params) {
+  function generateNovaPdfUrl(novaId, typeKey, id, week, disrupt = false) {
     // Params: (schoolId, scheduleType, scheduleId, week, disrupt = false)
     let url = novaPdfBaseUrl
-    url += '&schoolid=' + params.novaId
-    url += '&type=' + params.typeKey
-    url += '&id=' + params.id
-    url += '&week=' + params.week
+    url += '&schoolid=' + novaId
+    url += '&type=' + typeKey
+    url += '&id=' + id
+    url += '&week=' + week
     url += '&period=&mode=0&colors=32&width=2480&height=3500'
-    if (!params.disrupt) url += '&printer=1'
+    if (!disrupt) url += '&printer=1'
     // If you remove the printer=1, you strip away everything but the schedule, but that would require more work to map out the schedule.
 
     return url

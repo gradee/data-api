@@ -1,5 +1,6 @@
 // Router for /schedule
 const router = require('express').Router()
+const moment = require('moment')
 
 // Models
 const models = require('../models')
@@ -22,16 +23,31 @@ router.get('/:uuid', (req, res) => {
     }]
   }).then(schedule => {
     if (!schedule) return res.status(404).send('Not found.')
+    
+    const weekNum = moment().isoWeek()
 
-    nova.downloadSchedule({
-      novaId: schedule.school.novaId,
-      novaCode: schedule.school.novaCode,
-      typeKey: schedule.typeKey,
-      id: schedule.uuid,
-      week: 41
-    }).then(results => {
-      console.log(results)
-    }).catch(error => {
+    nova.downloadSchedule(schedule, schedule.school, weekNum)
+      .then(results => {
+        
+        results.data.forEach(lesson => {
+          const data = {
+            hexColor: lesson.color,
+          }
+
+          /**
+           * TODO:
+           * Figure out a nice solution for processing "block" lessons that don't have any siblings.
+           * That is that the event is one with 2 or more text rows (ex. title, room, course, teacher).
+           */
+
+          // console.log(lesson.texts)
+          // console.log(lesson.start)
+          // console.log(lesson.end)
+          // console.log(lesson.parsed)
+          // console.log('----------')
+        })
+      })
+    .catch(error => {
       console.log(error)
     })
 
