@@ -428,21 +428,32 @@ function Nova() {
         rows.forEach(row => {
           // Pull out all the strings in the row.
           let rowTexts = row.substring(4, row.length - 5).split('</td><td>')
+          // console.log(rowTexts[0])
+
+          // Check if all "row titles" exist in the PDF.
+          // If they do, then it's a "collection" block that probably bases the active lesson based on which part of the year it is.
+          // If none of they do, it most likely means it's a "custom" text in the PDF for some reason.
+
           // Filter through the texts to find the one's that exist in the PDF text,
           // then push the returned Array of matching texts to another Array for
           // further comparison
-          rowTexts = rowTexts.filter(text => joinedTexts.indexOf(text) > -1)
           filteredRows.push({
+            titleInPDF: (flatTexts.indexOf(rowTexts[0].split(' ').join('')) > -1),
             original: row,
-            filtered: rowTexts
+            filtered: rowTexts.filter(text => joinedTexts.indexOf(text) > -1)
           })
         })
 
-        console.log(lesson)
-        console.log(rows)
+        console.log(joinedTexts)
         console.log(filteredRows)
-        console.log(rows.length)
-        console.log(filteredRows.length)
+        console.log(lesson.table)
+        console.log('')
+        console.log('')
+        // console.log(lesson)
+        // console.log(rows)
+        // console.log(filteredRows)
+        // console.log(rows.length)
+        // console.log(filteredRows.length)
 
         // Now go through the filtered rows of texts, to find out if
         // they differ in length. Because if they do, it means one of
@@ -718,7 +729,7 @@ function Nova() {
     return new Promise((resolve, reject) => {
       async.eachOf(types, (type, i, callback) => {
         types[i].name = scheduleTypes[type.key].name
-        
+
         request(factory.generateNovaBaseUrl(school.novaId, school.novaCode, type.key), (error, response, body) => {
           if (error) return callback(error)
 
@@ -750,7 +761,7 @@ function Nova() {
     return new Promise((resolve, reject) => {
       request(factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
         if (error) return reject(error)
-        
+
         const strStart = '<span id="CounterLabel">'
         body = body.substring(body.indexOf(strStart) + strStart.length, body.length)
         body = body.substring(0, body.indexOf('</span>'))
@@ -759,7 +770,7 @@ function Nova() {
         body.split('<br>').forEach((str, i) => {
           dates[i ? 'published' : 'updated'] = str.substring(str.length - 19, str.length)
         })
-        
+
         resolve(dates)
       })
     })
@@ -768,7 +779,7 @@ function Nova() {
   function checkSchoolNovaDataUpdate(school, force = false) {
     return new Promise((resolve, reject) => {
       if (force) return resolve(true)
-      
+
       const lastUpdate = moment(school.novaDataUpdatedAt)
       getSchoolNovaMetaData(school).then(metaData => {
         const updatedOn = moment(metaData.updated)
