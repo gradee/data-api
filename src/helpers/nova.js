@@ -324,7 +324,7 @@ function Nova() {
     return lessons
   }
 
-  function parseLessonTable(lesson, lastLesson) {
+  function parseLessonTable(lesson, lastLesson, schedule) {
     // Copy the HTML table to use it without manipulating the original.
     let table = lesson.table
 
@@ -339,6 +339,10 @@ function Nova() {
       table = table.substring(rowEnd + 5, table.length)
     }
 
+    console.log(lesson.texts)
+    console.log(rows)
+    console.log('')
+
     let parsed = {}
     if (tableRowsAreMultiple(rows)) {
       // This is a "multi" type, meaning there are multiple
@@ -352,9 +356,7 @@ function Nova() {
       // parsed lesson, that is if there is none, and if so
       // if it was also a multi type lesson.
       let row = 0
-      if (lastLesson.type) {
-        row = (lastLesson.type === 'multi' && lastLesson.table === lesson.table) ? 1:0
-      }
+      
       parsed = parseTableTimeRow(rows[row])
       parsed.type = 'multi'
     } else if (rows[0].indexOf('Block:') > -1) {
@@ -437,6 +439,11 @@ function Nova() {
           // Pull out all the strings in the row.
           let rowTexts = row.substring(4, row.length - 5).split('</td><td>')
           rowTexts = rowTexts.filter(text => text.length) // Remove any empty string columns.
+          // Check for teacher initials and remove them from the parser.
+          // This will (obviously) only run when loading teacher schedules.
+          if (schedule.initials) {
+            rowTexts = rowTexts.filter(text => text !== schedule.initials)
+          }
 
           // Check the flat title match against the PDF text to find the one's that do match.
           if (flatTexts.indexOf(rowTexts[0].split(' ').join('')) > -1) {
@@ -451,11 +458,11 @@ function Nova() {
         if (filteredRows.length > 1) {
           // Even out the text column count to make sure you can more accurately compare the occurance of texts
           filteredRows.forEach(row => {
-            console.log(lesson.texts)
-            console.log(row)
-            console.log(row.texts.length)
-            console.log(row.texts.filter(text => joinedTexts.indexOf(text) > -1).length)
-            console.log('')
+            // console.log(lesson.texts)
+            // console.log(row)
+            // console.log(row.texts.length)
+            // console.log(row.texts.filter(text => joinedTexts.indexOf(text) > -1).length)
+            // console.log('')
             // rowTexts.filter(text => joinedTexts.indexOf(text) > -1)
           })
         }
@@ -463,8 +470,8 @@ function Nova() {
         // console.log(joinedTexts)
         // console.log(filteredRows)
         // console.log(lesson.table)
-        console.log('')
-        console.log('')
+        // console.log('')
+        // console.log('')
         // console.log(lesson)
         // console.log(rows)
         // console.log(filteredRows)
@@ -523,7 +530,7 @@ function Nova() {
     return parsed
   }
 
-  function parseLessonData(lessons, week) {
+  function parseLessonData(lessons, week, schedule) {
     let dt = luxon.DateTime.local()
     dt = dt.set({ weekNumber: week, seconds: 0 })
 
@@ -551,8 +558,8 @@ function Nova() {
 
       let lastParsed
       lessons = lessons.map(lesson => {
-        lesson.parsed = parseLessonTable(lesson, lastParsed)
-        lastParsed = lesson.parsed
+        lesson.parsed = parseLessonTable(lesson, lastParsed, schedule)
+        lastParsed = lesson
 
         const start = lesson.parsed.startTime.split(':')
         dt = dt.set({ hour: parseInt(start[0]), minute: parseInt(start[1]) })
@@ -698,7 +705,7 @@ function Nova() {
           if (error) return reject(error)
 
           resolve(
-            parseLessonData(lessons, week)
+            parseLessonData(lessons, week, schedule)
           )
         })
       }).catch(error => reject(error))
@@ -807,6 +814,7 @@ function Nova() {
   return {
     scheduleTypes,
     parseLessonData,
+    downloadPdfSchedule,
     downloadSchedule,
     downloadSchoolNovaData,
     checkSchoolNovaDataUpdate

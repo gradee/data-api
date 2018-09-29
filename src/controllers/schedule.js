@@ -28,7 +28,6 @@ router.get('/:uuid', (req, res) => {
 
     nova.downloadSchedule(schedule, schedule.school, weekNum)
       .then(results => {
-        
         results.data.forEach(lesson => {
           const data = {
             hexColor: lesson.color,

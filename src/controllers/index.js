@@ -51,7 +51,12 @@ function saveSchoolNovaData(school, types) {
           schoolId: school.id,
           typeKey: type.key,
           uuid: schedule.id.replace('{', '').replace('}', ''),
-          name: schedule.name
+          name: schedule.name,
+          rawName: schedule.rawName,
+          firstName: schedule.firstName,
+          lastName: schedule.lastName,
+          initials: schedule.initials,
+          className: schedule.className
         })
         .then(_ => cb())
         .catch(error => cb(error))

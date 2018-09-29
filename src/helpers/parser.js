@@ -1,53 +1,72 @@
 function Parser() {
 
+  function cleanSpacesFromString(s) {
+    // Remove leading spaces in string.
+    while (s.indexOf(' ') === 0) s = s.substring(1, s.length)
+    // Remove trailing spaces in string.
+    while (s.lastIndexOf(' ') === (s.length - 1)) s = s.substring(0, s.lastIndexOf(' '))
+    // Remove double spaces in string.
+    while (s.indexOf('  ') > -1) s = s.replace('  ', ' ')
+    return s
+  }
+
   function parseNovaOptionData(html, type) {
     const id = html.substring(html.indexOf('value="') + 7, html.indexOf('">')).replace(/&#(\d+)/g, function (m, n) { return String.fromCharCode(n) })
     let name = html.substring(html.indexOf('">') + 2, html.indexOf('</')).replace(/&#(\d+)/g, function (m, n) { return String.fromCharCode(n) })
     while (name.indexOf('&amp') > -1) {
       name = name.replace('&amp', '&')
     }
-    const rawName = name
-    if (name !== '(Välj ID)' && name !== '(Vä;lj ID)') {
+    while (name.indexOf(';') > -1) {
+      name = name.replace(';', '')
+    }
+
+    if (name !== '(Välj ID)') {
+      const rawName = name
       let initials
       let firstName
       let lastName
       let className
 
       if (type.name === 'Lärare' || type.name === 'Elev') {
-        if (type.name === 'Lärare' && name.indexOf(' (') > -1) {
+        if (type.name === 'Lärare' && name.indexOf('(') > -1) {
           // It's a Teacher's name with initials, grab them.
-          initials = name.substring(name.indexOf(' (') + 2, name.indexOf(')'))
-          name = name.substring(0, name.indexOf(' ('))
+          initials = name.substring(name.indexOf('(') + 1, name.indexOf(')'))
+          name = name.substring(0, name.indexOf('('))
         } else if (type.name === 'Elev') {
-          className = name.substring(0, name.indexOf(' '))
-          name = name.replace(className, '')
-
-          // Get the closest character
-          let tempName = name
-          while (tempName.indexOf(' ') > -1) { tempName = tempName.replace(' ', '') }
-          name = name.substring(name.indexOf(tempName.substring(0, 1)), name.length)
+          if (name.indexOf('  ') > -1) {
+            className = name.split('  ')[0]
+            name = name.split('  ')[1]
+          }
         }
 
-        firstName = name.substring(name.indexOf(',') + 1, name.length)
-        if (firstName && firstName.substring(0, 1) === ' ') firstName = firstName.substring(1, firstName.length)
-        lastName = name.substring(0, name.indexOf(','))
-        name = (firstName && lastName) ? (firstName + ' ' + lastName):((firstName) ? firstName:lastName)
+        if (name.indexOf(',') > -1) {
+          lastName = name.split(',')[0]
+          firstName = name.split(',')[1]
+        }
+
+        name = (firstName && lastName) ? (firstName + ' ' + lastName) : ((firstName) ? firstName : lastName)
+        if (type.name === 'Elev' && className) {
+          name = className + ' ' + name
+        } else if (type.name === 'Lärare' && !name) {
+          name = initials
+        }
       }
 
-      name = (className) ? className + ' ' + name:name
-      while (name.indexOf(';') > -1) {
-        name = name.replace(';', '')
-      }
+      // Clean out double space + space before or after string in first name, last name and full name.
+      name = cleanSpacesFromString(name)
+      if (firstName) firstName = cleanSpacesFromString(firstName)
+      if (lastName) lastName = cleanSpacesFromString(lastName)
+      if (initials) initials = cleanSpacesFromString(initials)
+      if (className) className = cleanSpacesFromString(className)
 
       return {
-        // id: id,
         id: id,
         name: name,
-        // rawName: rawName,
-        // firstName: firstName,
-        // lastName: lastName,
-        // initials: initials,
-        // className: className
+        rawName: rawName,
+        firstName: firstName,
+        lastName: lastName,
+        initials: initials,
+        className: className
       }
     }
   }

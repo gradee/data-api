@@ -24,6 +24,30 @@ module.exports = (connection, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
+    rawName: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      field: 'raw_name'
+    },
+    firstName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'first_name'
+    },
+    lastName: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'last_name'
+    },
+    initials: {
+      type: DataTypes.STRING,
+      allowNull: true
+    },
+    className: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'class_name'
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
