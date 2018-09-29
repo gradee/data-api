@@ -159,7 +159,7 @@ router.post('/:schoolSlug', (req, res) => {
 
     // Make sure the school slug isn't taken.
     schoolSlugIsUnique(req.body.slug, school).then(result => {
-      if (!result.slugIsUnique && !result.isCurrentSlug) return res.status(400).send('The slug is used by a different school.')
+      if (!result.slugIsUnique && !result.isCurrentSlug) return res.status(400).send('The slug you provided is already taken.')
 
       // Build data model based on recevied (or not received) parameters.
       const data = {}
@@ -179,6 +179,31 @@ router.post('/:schoolSlug', (req, res) => {
       }).catch(error => {
         console.log(error)
         res.status(500).send('Something went wrong.')
+      })
+    }).catch(error => {
+      console.log(error)
+      res.status(500).send('Something went wrong.')
+    })
+  })
+})
+
+router.delete('/:schoolSlug', (req, res) => {
+  if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
+
+  models.School.findOne({
+    where: {
+      slug: req.params.schoolSlug
+    }
+  }).then(school => {
+    if (!school) return res.status(404).send('Not found.')
+
+    models.School.destroy({
+      where: {
+        id: school.id
+      }
+    }).then(_ => {
+      res.send({
+        success: true
       })
     }).catch(error => {
       console.log(error)
@@ -259,21 +284,26 @@ router.post('/', (req, res) => {
   if (req.body.novaId && !validator.validateNovaValue(req.body.novaId)) return res.status(400).send('Invalid Nova ID.')
   if (req.body.novaCode && !validator.validateNovaValue(req.body.novaCode)) return res.status(400).send('Invalid Nova code.')
 
-  schoolPropsAreUnique(req.body).then(result => {
-    if (!result.propsAreUnique) return res.status(400).send(result.reason)
-    
+  schoolSlugIsUnique(req.body.slug).then(result => {
+    if (!result.slugIsUnique) return res.status(400).send('The slug you provided is already taken.')
+
     models.School.create({
       name: req.body.name,
       slug: req.body.slug,
-      novaId: req.body.novaId,
-      novaCode: req.body.novaCode
+      novaId: req.body.novaId || '',
+      novaCode: req.body.novaCode || ''
     }).then(school => {
 
-      nova.downloadSchoolNovaData(school).then(data => {
-        saveSchoolNovaData(school, data).then(_ => {
-          res.json({ success: true })
+      if (school.novaId && school.novaCode) {
+        nova.downloadSchoolNovaData(school).then(data => {
+          saveSchoolNovaData(school, data).then(_ => {
+            res.json({ success: true })
+          })
         })
-      })
+      } else {
+        res.json({ success: true })
+      }
+      
 
     })
   })
