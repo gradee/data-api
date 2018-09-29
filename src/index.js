@@ -10,7 +10,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
   next()
 })
-app.use(helmet)
+app.use(helmet())
 app.use(bodyparser.json())
 app.use('/', require('./controllers'))
 app.listen(3000, () => {
