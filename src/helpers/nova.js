@@ -182,8 +182,14 @@ function Nova() {
     timeDistance = Math.round((timeDistance / additions) / 0.05) * 0.05 // Round to event 0.05 (3.49 > 3.5 / 3.54 > 3.55)
     timeDistance = Math.round(timeDistance * 100) / 100 // Round to 2 decimals.
 
+    const firstHourObj = timeFrameObjects[0]
+    const firstHourInt = parseInt(timeFrameObjects[0].R[0].T.split(':')[0])
     const hourHeight = timeDistance * 16
     const minuteHeight = hourHeight / 60
+
+    // 34.063 - 33.563 = 0,5 
+    // 9.875 - 9.375 = 0,5
+    // So the position Y difference between the hour and the lesson on that hour, is always 0,5. YAY!!! :D
 
     /**
      * Go through fills
@@ -191,13 +197,17 @@ function Nova() {
 
     // Sort by height, and remove the grey background boxes.
     sortArrayByKey(fills, 'h')
+    // Filter out the two main "frame" fills on the side of the schedule
+    fills = fills.filter(fill => (fill.h <= 31.125))
     const weekBacks = fills.splice(fills.length - 5, 5)
     const topStart = weekBacks[0].y * 16
+
+    const distanceToFirstHour = ((firstHourObj.y + 0.5) - weekBacks[0].y) * 16
+    const minutesToFirstHour = Math.round((distanceToFirstHour / minuteHeight) / 5) * 5
 
     // Grab any background box and define the bottom border of the schedule using the box's Y position and it's height.
     borders.bottom = weekBacks[0].y + weekBacks[0].h
     sortArrayByKey(weekBacks, 'x')
-
 
     // Sort by Y position
     sortArrayByKey(fills, 'y')
@@ -252,7 +262,8 @@ function Nova() {
       weekdayFills.forEach((dayFill, i) => {
         if (fill.x >= dayFill.x && fill.x < (dayFill.x + dayFill.w)) day = i
       })
-      let fdt = dt.set({ weekday: (day + 1), hour: 8, minute: 0, second: 0, millisecond: 0 })
+      let fdt = dt.set({ weekday: (day + 1), hour: firstHourInt, minute: 0, second: 0, millisecond: 0 })
+      fdt = fdt.minus({ minutes: minutesToFirstHour })
 
       const startsAfter = Math.round((((fill.y * 16) - topStart) / minuteHeight) / 5) * 5
       const lastsFor = Math.round(((fill.h * 16) / minuteHeight) / 5) * 5
@@ -293,7 +304,7 @@ function Nova() {
     sortArrayByKey(texts, 'y')
 
     // Go through all texts and add 0.25 to the
-    // x position since the difference between
+    // x and y position since the difference between
     // the rendered PDF and data is generally 0.25
     //
     // Same princimple for 0.98 added to the text width.
@@ -302,6 +313,7 @@ function Nova() {
     // width, divided by 16, to the x value.
     texts.forEach((text, i)=> {
       texts[i].x += 0.25
+      texts[i].y += 0.25
       texts[i].w -= 0.98
       texts[i].x2 = texts[i].x + (texts[i].w / 16)
     })

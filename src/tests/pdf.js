@@ -25,10 +25,11 @@ const schedules = [
   }
 ]
 
-const pdfUrl = factory.generateNovaPdfUrl(schedules[2].novaId, schedules[2].typeKey, schedules[2].id, week, false)
+const pdfUrl = factory.generateNovaPdfUrl(schedules[1].novaId, schedules[1].typeKey, schedules[1].id, week, false)
 
 nova.downloadPdfSchedule(pdfUrl).then(data => {
   const results = nova.parsePdfSchedule(data, week)
+
   results.forEach(obj => {
     console.log(obj.meta)
     console.log('')
