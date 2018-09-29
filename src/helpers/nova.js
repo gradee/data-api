@@ -870,6 +870,32 @@ function Nova() {
     })
   }
 
+  function fetchNovaSchedule(novaId, typeKey, uuid, week) {
+    return new Promise((resolve, reject) => {
+      const pdfUrl = factory.generateNovaPdfUrl(novaId, typeKey, '{' + uuid + '}', week)
+      
+      downloadPdfSchedule(pdfUrl).then(data => {
+        const lessonList = parsePdfSchedule(data, week)
+        const lessons = []
+        lessonList.forEach(lesson => {
+          lessons.push({
+            title: lesson.meta.text,
+            startTime: lesson.meta.startTime.toISO(),
+            endTime: lesson.meta.endTime.toISO()
+          })
+        })
+
+        lessons.sort((a, b) => {
+          if (a.startTime > b.startTime) return 1
+          if (a.startTime < b.startTime) return -1
+          return 0
+        })
+
+        return resolve(lessons)
+      }).catch(error => reject(error))
+    })
+  }
+
   return {
     scheduleTypes,
     parseLessonData,
@@ -877,7 +903,8 @@ function Nova() {
     parsePdfSchedule,
     downloadSchedule,
     downloadSchoolNovaData,
-    checkSchoolNovaDataUpdate
+    checkSchoolNovaDataUpdate,
+    fetchNovaSchedule
   }
 }
 
