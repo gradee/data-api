@@ -120,6 +120,21 @@ router.get('/:schoolSlug', (req, res) => {
   })
 })
 
+router.post('/:schoolSlug', (req, res) => {
+  if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
+
+  if (!req.body.name && !req.body.slug && !req.body.novaId && !req.body.novaCode) return res.status(400).send('No parameters sent.')
+  if (req.body.name && !validator.validateName(req.body.name)) return res.status(400).send('Invalid school name.')
+  if (req.body.slug && !validator.validateSlug(req.body.slug)) return res.status(400).send('Invalid school slug.')
+  if (req.body.novaId && !validator.validateNovaValue(req.body.novaId)) return res.status(400).send('Invalid Nova ID.')
+  if (req.body.novaCode && !validator.validateNovaValue(req.body.novaCode)) return res.status(400).send('Invalid Nova code.')
+  
+  // TODO: Check if slug, novaId or novaCode are unique values.
+
+  console.log(req.body)
+  res.send('Working.')
+})
+
 router.post('/:schoolSlug/update', (req, res) => {
   if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
   
