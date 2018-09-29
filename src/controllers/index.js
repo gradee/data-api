@@ -13,6 +13,25 @@ const nova = require('../helpers/nova')
 
 router.use('/schedule', require('./schedule'))
 
+function schoolSlugIsUnique(slug, currentSchool = null) {
+  return new Promise((resolve, reject) => {
+    models.School.findOne({
+      where: {
+        slug: slug
+      }
+    }).then(school => {
+      let result = { slugIsUnique: true }
+      if (school) {
+        result.slugIsUnique = false
+        if (currentSchool && currentSchool.id === school.id) {
+          result.isCurrentSlug = true
+        }
+      }
+      resolve(result)
+    }).catch(error => reject(error))
+  })
+}
+
 function schoolPropsAreUnique(data) {
   return new Promise((resolve, reject) => {
     models.School.findOne({
@@ -122,17 +141,50 @@ router.get('/:schoolSlug', (req, res) => {
 
 router.post('/:schoolSlug', (req, res) => {
   if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
+  if (!req.body.hasOwnProperty('name') && !req.body.hasOwnProperty('slug') && !req.body.hasOwnProperty('novaId') && !req.body.hasOwnProperty('novaCode')) return res.status(400).send('No parameters sent.')
 
-  if (!req.body.name && !req.body.slug && !req.body.novaId && !req.body.novaCode) return res.status(400).send('No parameters sent.')
-  if (req.body.name && !validator.validateName(req.body.name)) return res.status(400).send('Invalid school name.')
-  if (req.body.slug && !validator.validateSlug(req.body.slug)) return res.status(400).send('Invalid school slug.')
-  if (req.body.novaId && !validator.validateNovaValue(req.body.novaId)) return res.status(400).send('Invalid Nova ID.')
-  if (req.body.novaCode && !validator.validateNovaValue(req.body.novaCode)) return res.status(400).send('Invalid Nova code.')
-  
-  // TODO: Check if slug, novaId or novaCode are unique values.
+  models.School.findOne({
+    where: {
+      slug: req.params.schoolSlug
+    }
+  }).then(school => {
+    if (!school) return res.status(404).send('Not found.')
 
-  console.log(req.body)
-  res.send('Working.')
+    // Go through the accepted props and validate them if they have a value.
+    // Name and Slug are required to have a value if specified, novaId and novaCode does not. (allowNull: true / false)
+    if (req.body.hasOwnProperty('name') && !validator.validateName(req.body.name)) return res.status(400).send('Invalid school name.')
+    if (req.body.hasOwnProperty('slug') && !validator.validateSlug(req.body.slug)) return res.status(400).send('Invalid school slug.')
+    if (req.body.novaId && !validator.validateNovaValue(req.body.novaId)) return res.status(400).send('Invalid Nova ID.')
+    if (req.body.novaCode && !validator.validateNovaValue(req.body.novaCode)) return res.status(400).send('Invalid Nova code.')
+
+    // Make sure the school slug isn't taken.
+    schoolSlugIsUnique(req.body.slug, school).then(result => {
+      if (!result.slugIsUnique && !result.isCurrentSlug) return res.status(400).send('The slug is used by a different school.')
+
+      // Build data model based on recevied (or not received) parameters.
+      const data = {}
+      if (req.body.name) data.name = req.body.name
+      if (req.body.slug) data.slug = req.body.slug
+      if (req.body.hasOwnProperty('novaId')) data.novaId = req.body.novaId
+      if (req.body.hasOwnProperty('novaCode')) data.novaCode = req.body.novaCode
+      
+      // Actually update the school's data.
+      models.School.update(data, {
+        where: {
+          id: school.id
+        }
+      }).then(_ => {
+        // Update successful.
+        res.json({ success: true })
+      }).catch(error => {
+        console.log(error)
+        res.status(500).send('Something went wrong.')
+      })
+    }).catch(error => {
+      console.log(error)
+      res.status(500).send('Something went wrong.')
+    })
+  })
 })
 
 router.post('/:schoolSlug/update', (req, res) => {
@@ -204,8 +256,8 @@ router.post('/', (req, res) => {
   if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
   if (!req.body.name || !validator.validateName(req.body.name)) return res.status(400).send('Missing or invalid school name.')
   if (!req.body.slug || !validator.validateSlug(req.body.slug)) return res.status(400).send('Missing or invalid school slug.')
-  if (!req.body.novaId || !validator.validateNovaValue(req.body.novaId)) return res.status(400).send('Missing or invalid Nova ID.')
-  if (!req.body.novaCode || !validator.validateNovaValue(req.body.novaCode)) return res.status(400).send('Missing or invalid Nova code.')
+  if (req.body.novaId && !validator.validateNovaValue(req.body.novaId)) return res.status(400).send('Invalid Nova ID.')
+  if (req.body.novaCode && !validator.validateNovaValue(req.body.novaCode)) return res.status(400).send('Invalid Nova code.')
 
   schoolPropsAreUnique(req.body).then(result => {
     if (!result.propsAreUnique) return res.status(400).send(result.reason)

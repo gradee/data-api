@@ -16,12 +16,12 @@ module.exports = (connection, DataTypes) => {
     },
     novaId: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       field: 'nova_id'
     },
     novaCode: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
       field: 'nova_code'
     },
     novaDataUpdatedAt: {
