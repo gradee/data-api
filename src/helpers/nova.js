@@ -151,6 +151,40 @@ function Nova() {
     let fills = page.Fills
     let texts = page.Texts
 
+    // Pull out all time Strings into a separate Array.
+    // Frame times is between x = 1.875 -> 2.563
+    const timeFrameObjects = []
+    const timeStrings = []
+    texts.sort((a, b) => a.y - b.y || a.x - b.x)
+    texts = texts.filter(text => {
+      // Grab the frame texts so that you can calculate the distance between hour indicators.
+      if (text.x === 1.875 || text.x === 2.563) {
+        if (text.R[0].T.indexOf('%3A') > -1) text.R[0].T = text.R[0].T.replace('%3A', ':')
+        if (stringIsTime(text.R[0].T)) {
+          timeFrameObjects.push(text)
+        }
+      }
+      if (text.R[0].T.indexOf('%3A') > -1) text.R[0].T = text.R[0].T.replace('%3A', ':')
+      if (stringIsTime(text.R[0].T)) {
+        timeStrings.push(text)
+        return false
+      } else {
+        return text
+      }
+    })
+
+    let timeDistance = 0
+    let additions = 0
+    for (let i = 0; i < (timeFrameObjects.length - 1); i++) {
+      timeDistance += timeFrameObjects[i + 1].y - timeFrameObjects[i].y
+      additions++
+    }
+    timeDistance = Math.round((timeDistance / additions) / 0.05) * 0.05 // Round to event 0.05 (3.49 > 3.5 / 3.54 > 3.55)
+    timeDistance = Math.round(timeDistance * 100) / 100 // Round to 2 decimals.
+
+    const hourHeight = timeDistance * 16
+    const minuteHeight = hourHeight / 60
+
     /**
      * Go through fills
      */
@@ -158,7 +192,6 @@ function Nova() {
     // Sort by height, and remove the grey background boxes.
     sortArrayByKey(fills, 'h')
     const weekBacks = fills.splice(fills.length - 5, 5)
-    const minuteHeight = (weekBacks[0].h * 16) / minutes
     const topStart = weekBacks[0].y * 16
 
     // Grab any background box and define the bottom border of the schedule using the box's Y position and it's height.
@@ -211,7 +244,7 @@ function Nova() {
     })
 
     // The fills that are now left should only be lessons.
-    let dt = luxon.DateTime.local()
+    let dt = luxon.DateTime.local().setZone('Europe/Stockholm')
     dt = dt.set({ weekNumber: week, })
 
     fills.forEach(fill => {
@@ -219,7 +252,7 @@ function Nova() {
       weekdayFills.forEach((dayFill, i) => {
         if (fill.x >= dayFill.x && fill.x < (dayFill.x + dayFill.w)) day = i
       })
-      let fdt = dt.set({ weekday: day, hour: 8, minute: 0, second: 0, millisecond: 0 })
+      let fdt = dt.set({ weekday: (day + 1), hour: 8, minute: 0, second: 0, millisecond: 0 })
 
       const startsAfter = Math.round((((fill.y * 16) - topStart) / minuteHeight) / 5) * 5
       const lastsFor = Math.round(((fill.h * 16) / minuteHeight) / 5) * 5
@@ -280,12 +313,6 @@ function Nova() {
       weekdays[i].text = text
     })
 
-    // Remove all time strings, don't need them really since we use the "click hack".
-    texts = texts.filter(text => {
-      if (text.R[0].T.indexOf('%3A') > -1) text.R[0].T = text.R[0].T.replace('%3A', ':')
-      return (!stringIsTime(text.R[0].T))
-    })
-
     /**
      * To get the % of how much an element is overlapping another,
      * you need to compare the overlapping elements x1 and x2 values
@@ -307,8 +334,9 @@ function Nova() {
      * 1 - (fx1 / bx2) = 0.2307692308 ≈ 23% <- This is how much it overlaps.
      */
 
+    texts.sort((a, b) => a.y - b.y || a.x - b.x)
+
     texts.forEach(text => {
-      let didFindLesson = false
       lessons.forEach(lesson => {
         if (
           text.x >= lesson.borders.left &&
@@ -327,13 +355,11 @@ function Nova() {
             if ((text.x / lesson.borders.right) < 0.5) {
               // Less than half of the text is outside
               // the fill, so we're all good.
-              didFindLesson = true
               lesson.texts.push( decodeURIComponent(text.R[0].T) )
               lesson.meta.text = parser.cleanSpacesFromString(lesson.texts.join(' '))
             }
           } else {
             // You're all good, the text is inside the fill.
-            didFindLesson = true
             lesson.texts.push( decodeURIComponent(text.R[0].T) )
             lesson.meta.text = parser.cleanSpacesFromString(lesson.texts.join(' '))
           }
