@@ -662,7 +662,13 @@ function Nova() {
       parser.on('pdfParser_dataError', error => reject(error))
       parser.on('pdfParser_dataReady', rawData => resolve(rawData))
       // Perform request and pipe PDF parser.
-      request({ url: url, encodiong: null }).pipe(parser)
+      const req = request({ url: url, encoding: null }).on('response', (res) => {
+        if (res.statusCode === 200) {
+          req.pipe(parser)
+        } else {
+          reject('PDF does not exist.')
+        }
+      })
     })
   }
 
@@ -892,7 +898,7 @@ function Nova() {
         })
 
         return resolve(lessons)
-      }).catch(error => reject(error))
+      }).catch(error => { resolve([]) })
     })
   }
 
