@@ -410,8 +410,16 @@ function Nova() {
         parsed.texts = rows[0].substring(4, rows[0].length - 5).split('</td><td>')
         parsed.title = parsed.texts.splice(0, 1)[0]
       } else {
-        // Well ok, now we have to work some magic to determine which row
-        // is most likely this particular lesson's data row.
+        /**
+         * All right, so in this context, it's most likely going to be a collection lesson.
+         * I call it a collection, because in most cases it's 2 or more classes (courses) that all occur at the same time.
+         * This happens mostly for classes and or teachers.
+         * 
+         * So what we want to do is check which rows actually match the PDF texts.
+         * Rarely it's going to be only one row, but if it is, that's great.
+         * But most likely it's going to be multiple rows, or no rows at all.
+         * If no rows match, that means it's a "custom" text in the PDF, and then technically all rows match.
+         */
 
         // Go through all lesson tects to find any double spaces.
         lesson.texts = lesson.texts.map(text => {
@@ -428,25 +436,33 @@ function Nova() {
         rows.forEach(row => {
           // Pull out all the strings in the row.
           let rowTexts = row.substring(4, row.length - 5).split('</td><td>')
-          // console.log(rowTexts[0])
+          rowTexts = rowTexts.filter(text => text.length) // Remove any empty string columns.
 
-          // Check if all "row titles" exist in the PDF.
-          // If they do, then it's a "collection" block that probably bases the active lesson based on which part of the year it is.
-          // If none of they do, it most likely means it's a "custom" text in the PDF for some reason.
-
-          // Filter through the texts to find the one's that exist in the PDF text,
-          // then push the returned Array of matching texts to another Array for
-          // further comparison
-          filteredRows.push({
-            titleInPDF: (flatTexts.indexOf(rowTexts[0].split(' ').join('')) > -1),
-            original: row,
-            filtered: rowTexts.filter(text => joinedTexts.indexOf(text) > -1)
-          })
+          // Check the flat title match against the PDF text to find the one's that do match.
+          if (flatTexts.indexOf(rowTexts[0].split(' ').join('')) > -1) {
+            filteredRows.push({
+              original: row,
+              texts : rowTexts
+            })
+          }
         })
 
-        console.log(joinedTexts)
-        console.log(filteredRows)
-        console.log(lesson.table)
+        // More than one row where the title match the PDF texts.
+        if (filteredRows.length > 1) {
+          // Even out the text column count to make sure you can more accurately compare the occurance of texts
+          filteredRows.forEach(row => {
+            console.log(lesson.texts)
+            console.log(row)
+            console.log(row.texts.length)
+            console.log(row.texts.filter(text => joinedTexts.indexOf(text) > -1).length)
+            console.log('')
+            // rowTexts.filter(text => joinedTexts.indexOf(text) > -1)
+          })
+        }
+
+        // console.log(joinedTexts)
+        // console.log(filteredRows)
+        // console.log(lesson.table)
         console.log('')
         console.log('')
         // console.log(lesson)
@@ -458,47 +474,47 @@ function Nova() {
         // Now go through the filtered rows of texts, to find out if
         // they differ in length. Because if they do, it means one of
         // them matches the PDF text better than the other(s).
-        let highest = 0
-        let length = -1
-        let sameLength = true
-        filteredRows.forEach(row => {
-          if (length === -1) length = row.filtered.length
-          if (length !== row.filtered.length) sameLength = false
-          if (highest < row.filtered.length) highest = row.filtered.length
-        })
+        // let highest = 0
+        // let length = -1
+        // let sameLength = true
+        // filteredRows.forEach(row => {
+        //   if (length === -1) length = row.filtered.length
+        //   if (length !== row.filtered.length) sameLength = false
+        //   if (highest < row.filtered.length) highest = row.filtered.length
+        // })
 
-        let finalRows
-        let matchedRow
-        if (!sameLength) {
+        // let finalRows
+        // let matchedRow
+        // if (!sameLength) {
           // Great, at least one of them is longer than the others,
           // use the stored length value in "highest" to find the one(s)
           // that are the longest (hopefully only one).
-          finalRows = filteredRows.filter(row => row.filtered.length === highest)
-          if (finalRows.length === 1) {
+          // finalRows = filteredRows.filter(row => row.filtered.length === highest)
+          // if (finalRows.length === 1) {
             // Turns out it was just one!
-            matchedRow = finalRows[0].original
-          }
-        }
+            // matchedRow = finalRows[0].original
+        //   }
+        // }
 
-        if (!matchedRow) {
+        // if (!matchedRow) {
           // Well all right then, they are all now the same length,
           // so let's match them against the PDF texts to see
           // which one matches most.
 
-          match = 0
-          if (!finalRows) finalRows = filteredRows
-          finalRows.forEach(row => {
-            row = row.original
-            const rowTexts = row.substring(4, row.length - 5).split('</td><td>').join('').split(' ').join('')
-            const rowMatch = parser.calcStringSimilarity(flatTexts, rowTexts)
-            if (rowMatch > match) {
-              matchedRow = row
-            }
-          })
-        }
+        //   match = 0
+        //   if (!finalRows) finalRows = filteredRows
+        //   finalRows.forEach(row => {
+        //     row = row.original
+        //     const rowTexts = row.substring(4, row.length - 5).split('</td><td>').join('').split(' ').join('')
+        //     const rowMatch = parser.calcStringSimilarity(flatTexts, rowTexts)
+        //     if (rowMatch > match) {
+        //       matchedRow = row
+        //     }
+        //   })
+        // }
 
-        parsed.texts = matchedRow.substring(4, matchedRow.length - 5).split('</td><td>')
-        parsed.title = parsed.texts.splice(0, 1)[0]
+        // parsed.texts = matchedRow.substring(4, matchedRow.length - 5).split('</td><td>')
+        // parsed.title = parsed.texts.splice(0, 1)[0]
       }
     }
 
