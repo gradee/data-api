@@ -1,11 +1,10 @@
 // Main controller that handles all routes.
 const router = require('express').Router()
-const Op = require('sequelize').Op
 const async = require('async')
 const moment = require('moment')
 
 // Models
-const models = require(appRoot + '/models')
+const models = require('../models')
 
 // Helpers
 const validator = require('../helpers/validator')
@@ -29,34 +28,6 @@ function schoolSlugIsUnique(slug, currentSchool = null) {
       }
       resolve(result)
     }).catch(error => reject(error))
-  })
-}
-
-function schoolPropsAreUnique(data) {
-  return new Promise((resolve, reject) => {
-    models.School.findOne({
-      where: {
-        [Op.or]: [
-          { slug: data.slug },
-          { novaId: data.novaId },
-          { novaCode: data.novaCode }
-        ]
-      }
-    }).then(school => {
-      let result = { propsAreUnique: true }
-      if (school) {
-        result.propsAreUnique = false
-        if (school.slug === data.slug) {
-          result.reason = 'The slug you provided is already taken.'
-        } else if (school.novaId === data.novaId) {
-          result.reason = 'The Nova ID you provided is already being used.'
-        } else if (school.novaCode === data.novaCode) {
-          result.reason = 'The Nova code you provided is already being used.'
-        }
-      }
-
-      resolve(result)
-    })
   })
 }
 

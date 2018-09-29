@@ -2,8 +2,7 @@
 const fs = require('fs')
 
 function Validator() {
-
-  const bannedSlugs = JSON.parse(fs.readFileSync(appRoot + '/../banned-slugs.json').toString())
+  const bannedSlugs = JSON.parse(fs.readFileSync(__dirname + '/../../banned-slugs.json').toString())
 
   function validateName(str) {
     const p = /^[a-zA-ZàáâäãåąčćęèéêëėįìíîïłńòóôöõøùúûüųūÿýżźñçčšžÀÁÂÄÃÅĄĆČĖĘÈÉÊËÌÍÎÏĮŁŃÒÓÔÖÕØÙÚÛÜŲŪŸÝŻŹÑßÇŒÆČŠŽ∂ð ,.\'-]+$/
