@@ -207,6 +207,7 @@ function Parser() {
   }
 
   return {
+    cleanSpacesFromString,
     parseNovaOptionData,
     parseNovaBaseData,
     parseNovaTypeData,

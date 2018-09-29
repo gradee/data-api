@@ -123,7 +123,7 @@ function Nova() {
     }
   }
 
-  function parsePdfSchedule(raw) {
+  function parsePdfSchedule(raw, week) {
     /**
      * Pixel ratio
      * 1 = 16
@@ -144,6 +144,8 @@ function Nova() {
     const weekdays = []
     const lessons = []
     const borders = {}
+    const hours = 9
+    const minutes = 60 * hours
 
     const page = raw.formImage.Pages[0]
     let fills = page.Fills
@@ -156,6 +158,9 @@ function Nova() {
     // Sort by height, and remove the grey background boxes.
     sortArrayByKey(fills, 'h')
     const weekBacks = fills.splice(fills.length - 5, 5)
+    const minuteHeight = (weekBacks[0].h * 16) / minutes
+    const topStart = weekBacks[0].y * 16
+
     // Grab any background box and define the bottom border of the schedule using the box's Y position and it's height.
     borders.bottom = weekBacks[0].y + weekBacks[0].h
     sortArrayByKey(weekBacks, 'x')
@@ -206,16 +211,24 @@ function Nova() {
     })
 
     // The fills that are now left should only be lessons.
+    let dt = luxon.DateTime.local()
+    dt = dt.set({ weekNumber: week, })
 
     fills.forEach(fill => {
       let day
       weekdayFills.forEach((dayFill, i) => {
         if (fill.x >= dayFill.x && fill.x < (dayFill.x + dayFill.w)) day = i
       })
+      let fdt = dt.set({ weekday: day, hour: 8, minute: 0, second: 0, millisecond: 0 })
+
+      const startsAfter = Math.round((((fill.y * 16) - topStart) / minuteHeight) / 5) * 5
+      const lastsFor = Math.round(((fill.h * 16) / minuteHeight) / 5) * 5
+
+      const starts = fdt.plus({ minutes: startsAfter })
+      const ends = starts.plus({ minutes: lastsFor })
 
       lessons.push({
         day: day,
-        color: (fill.clr > -1) ? colorIndex[fill.clr]:fill.oc,
         width: fill.w,
         height: fill.h,
         position: {
@@ -228,7 +241,13 @@ function Nova() {
           left: fill.x,
           right: fill.x + fill.w
         },
-        texts: []
+        texts: [],
+        meta: {
+          text: '',
+          startTime: starts,
+          endTime: ends,
+          color: (fill.clr > -1) ? colorIndex[fill.clr]:fill.oc
+        }
       })
     })
 
@@ -310,11 +329,13 @@ function Nova() {
               // the fill, so we're all good.
               didFindLesson = true
               lesson.texts.push( decodeURIComponent(text.R[0].T) )
+              lesson.meta.text = parser.cleanSpacesFromString(lesson.texts.join(' '))
             }
           } else {
             // You're all good, the text is inside the fill.
             didFindLesson = true
             lesson.texts.push( decodeURIComponent(text.R[0].T) )
+            lesson.meta.text = parser.cleanSpacesFromString(lesson.texts.join(' '))
           }
         }
       })
@@ -735,7 +756,7 @@ function Nova() {
         const checksum = crypto.createHash('sha256').update(JSON.stringify(rawData.formImage.Pages)).digest('hex')
 
         // Parse the raw PDF data to get the lesson frames.
-        const bareLessons = parsePdfSchedule(rawData)
+        const bareLessons = parsePdfSchedule(rawData, week)
         getLessonData(bareLessons, schedule, school, week).then(results => {
           // Download and parse all lesson data based on the PDF data.
           resolve({
@@ -815,6 +836,7 @@ function Nova() {
     scheduleTypes,
     parseLessonData,
     downloadPdfSchedule,
+    parsePdfSchedule,
     downloadSchedule,
     downloadSchoolNovaData,
     checkSchoolNovaDataUpdate
