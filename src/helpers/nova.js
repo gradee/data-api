@@ -876,7 +876,47 @@ function Nova() {
     })
   }
 
-  function fetchNovaSchedule(novaId, typeKey, uuid, week) {
+  function parseLessonTitle(title, schedules) {
+
+    // Remove any comma's before parsing.
+    while (title.indexOf(',') > -1) {
+      title = title.replace(',', ' ')
+    }
+
+    const results = {
+      title: '',
+      teachers: [],
+      rooms: [],
+      classes: []
+    }
+    schedules.forEach(schedule => {
+      if (schedule.typeKey === 0) {
+        // Teachers
+        if (title.indexOf(' ' + schedule.initials + ' ') > -1 || title.indexOf(' ' + schedule.initials) === (title.length - (schedule.initials.length + 1)) ) {
+          title = title.replace(schedule.initials, '')
+          results.teachers.push({
+            name: schedule.name,
+            id: schedule.id
+          })
+        }
+      } else {
+        // Classes & Rooms
+        if (title.indexOf(' ' + schedule.name + ' ') > -1 || (title.indexOf(' ' + schedule.name) > -1 && title.indexOf(' ' + schedule.name) === (title.length - (schedule.name.length + 1))) ) {
+          title = title.replace(schedule.name, '')
+          results[schedule.typeKey === 1 ? 'classes' : 'rooms'].push({
+            name: schedule.name,
+            id: schedule.id
+          })
+        }
+      }
+    })
+    
+    results.title = parser.cleanSpacesFromString(title)
+    
+    return results
+  }
+
+  function fetchNovaSchedule(novaId, typeKey, uuid, week, schedules) {
     return new Promise((resolve, reject) => {
       const pdfUrl = factory.generateNovaPdfUrl(novaId, typeKey, '{' + uuid + '}', week)
       
@@ -884,11 +924,18 @@ function Nova() {
         const lessonList = parsePdfSchedule(data, week)
         const lessons = []
         lessonList.forEach(lesson => {
-          lessons.push({
-            title: lesson.meta.text,
-            startTime: lesson.meta.startTime.toISO(),
-            endTime: lesson.meta.endTime.toISO()
-          })
+          if (schedules) {
+            const lessonData = parseLessonTitle(lesson.meta.text, schedules)
+            lessonData.startTime = lesson.meta.startTime.toISO()
+            lessonData.endTime = lesson.meta.endTime.toISO()
+            lessons.push(lessonData)
+          } else {
+            lessons.push({
+              title: lesson.meta.text,
+              startTime: lesson.meta.startTime.toISO(),
+              endTime: lesson.meta.endTime.toISO()
+            })
+          }
         })
 
         lessons.sort((a, b) => {
@@ -898,7 +945,10 @@ function Nova() {
         })
 
         return resolve(lessons)
-      }).catch(error => { resolve([]) })
+      }).catch(error => {
+        console.log(error)
+        resolve([])
+      })
     })
   }
 
