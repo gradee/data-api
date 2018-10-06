@@ -10,6 +10,7 @@ const crypto = require('crypto')
 // Helpers
 const factory = require('./factory')
 const parser = require('./parser')
+const skolverket = require('./skolverket')
 
 function Nova() {
 
@@ -876,7 +877,7 @@ function Nova() {
     })
   }
 
-  function parseLessonTitle(title, schedules) {
+  function parseLessonTitle(title, schedules, courseList) {
 
     // Remove any comma's before parsing.
     while (title.indexOf(',') > -1) {
@@ -887,8 +888,48 @@ function Nova() {
       title: '',
       teachers: [],
       rooms: [],
-      classes: []
+      classes: [],
+      courses: []
     }
+
+    let guarenteedTitle = ''
+    let titleCourseCode = ''
+    for (let code in courseList) {
+      const course = courseList[code]
+      if (title.indexOf(course) > -1) {
+        titleCourseCode = code
+        guarenteedTitle = course
+        title = title.replace(course, '')
+      }
+    }
+
+    const titleParts = title.split(' ')
+    for (let code in courseList) {
+      const texts = []
+      titleParts.forEach(part => {
+        if (part.indexOf(code) > -1) {
+          texts.push(part)
+          title = title.replace(part, '')
+        }
+      })
+      if (texts.length) {
+        if (code === titleCourseCode) titleCourseCode = ''
+        results.courses.push({
+          name: courseList[code],
+          code: code,
+          groups: texts
+        })
+      }
+    }
+
+    if (titleCourseCode) {
+      results.courses.push({
+        name: courseList[titleCourseCode],
+        code: titleCourseCode
+      })
+      titleCourseCode = ''
+    }
+
     schedules.forEach(schedule => {
       if (schedule.typeKey === 0) {
         // Teachers
@@ -911,7 +952,7 @@ function Nova() {
       }
     })
     
-    results.title = parser.cleanSpacesFromString(title)
+    results.title = guarenteedTitle ? guarenteedTitle : parser.cleanSpacesFromString(title)
     
     return results
   }
@@ -920,34 +961,36 @@ function Nova() {
     return new Promise((resolve, reject) => {
       const pdfUrl = factory.generateNovaPdfUrl(novaId, typeKey, '{' + uuid + '}', week)
       
-      downloadPdfSchedule(pdfUrl).then(data => {
-        const lessonList = parsePdfSchedule(data, week)
-        const lessons = []
-        lessonList.forEach(lesson => {
-          if (schedules) {
-            const lessonData = parseLessonTitle(lesson.meta.text, schedules)
-            lessonData.startTime = lesson.meta.startTime.toISO()
-            lessonData.endTime = lesson.meta.endTime.toISO()
-            lessons.push(lessonData)
-          } else {
-            lessons.push({
-              title: lesson.meta.text,
-              startTime: lesson.meta.startTime.toISO(),
-              endTime: lesson.meta.endTime.toISO()
-            })
-          }
+      skolverket.getCourses(courses => {
+        downloadPdfSchedule(pdfUrl).then(data => {
+          const lessonList = parsePdfSchedule(data, week)
+          const lessons = []
+          lessonList.forEach(lesson => {
+            if (schedules) {
+              const lessonData = parseLessonTitle(lesson.meta.text, schedules, courses)
+              lessonData.startTime = lesson.meta.startTime.toISO()
+              lessonData.endTime = lesson.meta.endTime.toISO()
+              lessons.push(lessonData)
+            } else {
+              lessons.push({
+                title: lesson.meta.text,
+                startTime: lesson.meta.startTime.toISO(),
+                endTime: lesson.meta.endTime.toISO()
+              })
+            }
+          })
+  
+          lessons.sort((a, b) => {
+            if (a.startTime > b.startTime) return 1
+            if (a.startTime < b.startTime) return -1
+            return 0
+          })
+  
+          return resolve(lessons)
+        }).catch(error => {
+          console.log(error)
+          resolve([])
         })
-
-        lessons.sort((a, b) => {
-          if (a.startTime > b.startTime) return 1
-          if (a.startTime < b.startTime) return -1
-          return 0
-        })
-
-        return resolve(lessons)
-      }).catch(error => {
-        console.log(error)
-        resolve([])
       })
     })
   }
