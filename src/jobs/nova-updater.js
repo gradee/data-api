@@ -9,7 +9,7 @@ const models = require('../models')
 // Helpers
 const School = require('../helpers/school')
 
-function updateAllSchoolData() {
+function updateAllSchoolData(force = false) {
   models.School.findAll().then(schools => {
     console.log('')
     console.log('-----------------------------------------------------------------')
@@ -22,7 +22,7 @@ function updateAllSchoolData() {
       console.log('  ' + school.name)
       console.log('-----')
       console.log('Started at: ' + luxon.DateTime.local().toISO())
-      School.updateNovaData(school)
+      School.updateNovaData(school, force)
         .then(didUpdate => {
           console.log('Finished at: ' + luxon.DateTime.local().toISO())
           console.log('Did update: ' + didUpdate)
@@ -36,10 +36,17 @@ function updateAllSchoolData() {
       console.log('-----------------------------------------------------------------')
       console.log('  Update process finished at: ' + luxon.DateTime.local().toISO())
       console.log('-----------------------------------------------------------------')
+
+      if (args.indexOf('--no-job') > -1) {
+        process.exit(0)
+      }
     })
   })
 }
 
-updateAllSchoolData()
+const args = process.argv.slice(2, process.argv.length)
 
-const updateJob = schedule.scheduleJob('0 */3 * * *', updateAllSchoolData)
+updateAllSchoolData(args.indexOf('-f') > -1)
+if (args.indexOf('--no-job') === -1) {
+  const updateJob = schedule.scheduleJob('0 */3 * * *', updateAllSchoolData)
+}
