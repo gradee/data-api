@@ -9,7 +9,7 @@ const crypto = require('crypto')
 
 // Helpers
 const factory = require('./factory')
-const Parser = require('./Parser')
+const Parser = require('./parser')
 const skolverket = require('./skolverket')
 
 function Nova() {
