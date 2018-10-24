@@ -194,10 +194,10 @@ router.post('/:schoolSlug/update', (req, res) => {
     if (!school) return res.status(404).send('Not found.')
 
     const force = req.body.hasOwnProperty('force') ? req.body.force : false
-    nova.checkSchoolNovaDataUpdate(school, force).then(updateAvailable => {
+    nova.checkSchoolDataUpdate(school, force).then(updateAvailable => {
       if (!updateAvailable) return res.send('Nova data is up to date.')
 
-      nova.downloadSchoolNovaData(school).then(data => {
+      nova.downloadSchoolData(school).then(data => {
         saveSchoolNovaData(school, data).then(_ => {
           res.send('Nova data updated.')
         })
@@ -266,7 +266,7 @@ router.post('/', (req, res) => {
     }).then(school => {
 
       if (school.novaId && school.novaCode) {
-        nova.downloadSchoolNovaData(school).then(data => {
+        nova.downloadSchoolData(school).then(data => {
           saveSchoolNovaData(school, data).then(_ => {
             res.json({ success: true })
           })
