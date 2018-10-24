@@ -6,8 +6,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/index.js",
-    "dbcreate": "node src/scripts/createDatabase.js",
-    "dbsync": "node src/scripts/synchronizeDatabase.js"
+    "dbcreate": "node src/scripts/create-database.js",
+    "dbsync": "node src/scripts/synchronize-database.js"
   },
   "keywords": [],
   "license": "MIT",

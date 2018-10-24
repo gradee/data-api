@@ -814,69 +814,6 @@ function Nova() {
     })
   }
 
-  function downloadNovaScheduleLists(school, types) {
-    return new Promise((resolve, reject) => {
-      async.eachOf(types, (type, i, callback) => {
-        types[i].name = scheduleTypes[type.key].name
-
-        request(factory.generateNovaBaseUrl(school.novaId, school.novaCode, type.key), (error, response, body) => {
-          if (error) return callback(error)
-
-          types[i] = parser.parseNovaTypeData(body, type)
-          callback()
-        })
-      }, (error) => {
-        if (error) return reject(error)
-
-        resolve(types)
-      })
-    })
-  }
-
-  function downloadSchoolNovaData(school) {
-    return new Promise((resolve, reject) => {
-      request(factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
-        if (error) return reject(error)
-
-        const data = parser.parseNovaBaseData(body)
-        if (data.complete) return resolve(data)
-
-        downloadNovaScheduleLists(school, data.types).then(data => resolve(data))
-      })
-    })
-  }
-
-  function getSchoolNovaMetaData(school) {
-    return new Promise((resolve, reject) => {
-      request(factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
-        if (error) return reject(error)
-
-        const strStart = '<span id="CounterLabel">'
-        body = body.substring(body.indexOf(strStart) + strStart.length, body.length)
-        body = body.substring(0, body.indexOf('</span>'))
-
-        const dates = {}
-        body.split('<br>').forEach((str, i) => {
-          dates[i ? 'published' : 'updated'] = str.substring(str.length - 19, str.length)
-        })
-
-        resolve(dates)
-      })
-    })
-  }
-
-  function checkSchoolNovaDataUpdate(school, force = false) {
-    return new Promise((resolve, reject) => {
-      if (force) return resolve(true)
-
-      const lastUpdate = moment(school.novaDataUpdatedAt)
-      getSchoolNovaMetaData(school).then(metaData => {
-        const updatedOn = moment(metaData.updated)
-        resolve(updatedOn.isAfter(lastUpdate))
-      }).catch(error => reject(error))
-    })
-  }
-
   function parseLessonTitle(title, schedules, courseList) {
 
     // Remove any comma's before parsing.
@@ -995,15 +932,94 @@ function Nova() {
     })
   }
 
+  function downloadNovaScheduleLists(school, types) {
+    return new Promise((resolve, reject) => {
+      async.eachOf(types, (type, i, callback) => {
+        types[i].name = scheduleTypes[type.key].name
+
+        request(factory.generateNovaBaseUrl(school.novaId, school.novaCode, type.key), (error, response, body) => {
+          if (error) return callback(error)
+
+          types[i] = parser.parseNovaTypeData(body, type)
+          callback()
+        })
+      }, (error) => {
+        if (error) return reject(error)
+
+        resolve(types)
+      })
+    })
+  }
+
+  function downloadSchoolData(school) {
+    return new Promise((resolve, reject) => {
+      request(factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
+        if (error) return reject(error)
+
+        const data = parser.parseNovaBaseData(body)
+        if (data.complete) return resolve(data)
+
+        downloadNovaScheduleLists(school, data.types).then(data => resolve(data))
+      })
+    })
+  }
+
+  function getSchoolMetaData(school) {
+    return new Promise((resolve, reject) => {
+      request(factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
+        if (error) return reject(error)
+
+        const strStart = '<span id="CounterLabel">'
+        body = body.substring(body.indexOf(strStart) + strStart.length, body.length)
+        body = body.substring(0, body.indexOf('</span>'))
+
+        const dates = {}
+        body.split('<br>').forEach((str, i) => {
+          dates[i ? 'published' : 'updated'] = str.substring(str.length - 19, str.length)
+        })
+
+        resolve(dates)
+      })
+    })
+  }
+
+  function checkSchoolDataUpdate(school, force = false) {
+    return new Promise((resolve, reject) => {
+      if (force) return resolve(true)
+
+      const lastUpdate = moment(school.novaDataUpdatedAt)
+      getSchoolMetaData(school).then(metaData => {
+        const updatedOn = moment(metaData.updated)
+        resolve(updatedOn.isAfter(lastUpdate))
+      }).catch(error => reject(error))
+    })
+  }
+
+  function prepareSchoolData(data, schoolId) {
+    const schedules = []
+    data.forEach((typeObj, key) => {
+      typeObj.schedules.forEach((schedule) => {
+        schedule.uuid = schedule.id.substr(1, schedule.id.length - 2)
+        schedule.schoolId = schoolId
+        schedule.typeKey = key
+        delete schedule.id
+        
+        schedules.push(schedule)
+      })
+    })
+    return schedules
+  }
+
   return {
     scheduleTypes,
     parseLessonData,
     downloadPdfSchedule,
     parsePdfSchedule,
     downloadSchedule,
-    downloadSchoolNovaData,
-    checkSchoolNovaDataUpdate,
-    fetchNovaSchedule
+    fetchNovaSchedule,
+    downloadSchoolData,
+    checkSchoolDataUpdate,
+    prepareSchoolData
   }
 }
 
