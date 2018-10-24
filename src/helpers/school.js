@@ -53,15 +53,15 @@ function School() {
     })
   }
 
-  function updateNovaData(school) {
+  function updateNovaData(school, force = false) {
     return new Promise((resolve, reject) => {
       // First of all, make sure it needs updating.
       Nova.checkSchoolDataUpdate(school).then(needsUpdate => {
-        if (!needsUpdate) return resolve(false)
+        if (!needsUpdate && !force) return resolve(false)
 
         // Download the school's data from Nova
         Nova.downloadSchoolData(school).then(data => {
-          
+                    
           // Fix the data to better suit storing in the database.
           const schedules = Nova.prepareSchoolData(data, school.id)
 

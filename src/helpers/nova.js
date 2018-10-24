@@ -9,7 +9,7 @@ const crypto = require('crypto')
 
 // Helpers
 const factory = require('./factory')
-const parser = require('./parser')
+const Parser = require('./Parser')
 const skolverket = require('./skolverket')
 
 function Nova() {
@@ -137,9 +137,9 @@ function Nova() {
      * 0.375 = 6
      * 0,875 = 14
      *
-     * The PDF parser always rounds upwards (for example: 17 / 16 is actually 1.0625)
+     * The PDF Parser always rounds upwards (for example: 17 / 16 is actually 1.0625)
      *
-     * For PDF parser docs, visit: https://github.com/modesty/pdf2json
+     * For PDF Parser docs, visit: https://github.com/modesty/pdf2json
      */
 
     const weekdays = []
@@ -369,12 +369,12 @@ function Nova() {
               // Less than half of the text is outside
               // the fill, so we're all good.
               lesson.texts.push( decodeURIComponent(text.R[0].T) )
-              lesson.meta.text = parser.cleanSpacesFromString(lesson.texts.join(' '))
+              lesson.meta.text = Parser.cleanSpacesFromString(lesson.texts.join(' '))
             }
           } else {
             // You're all good, the text is inside the fill.
             lesson.texts.push( decodeURIComponent(text.R[0].T) )
-            lesson.meta.text = parser.cleanSpacesFromString(lesson.texts.join(' '))
+            lesson.meta.text = Parser.cleanSpacesFromString(lesson.texts.join(' '))
           }
         }
       })
@@ -447,7 +447,7 @@ function Nova() {
         let matchedRow
         rows.forEach(row => {
           const rowTexts = row.substring(4, row.length - 5).split('</td><td>').join('').split(' ').join('')
-          const rowMatch = parser.calcStringSimilarity(lessonTexts, rowTexts)
+          const rowMatch = Parser.calcStringSimilarity(lessonTexts, rowTexts)
           if (rowMatch > match) {
             matchedRow = row
           }
@@ -499,7 +499,7 @@ function Nova() {
           // Pull out all the strings in the row.
           let rowTexts = row.substring(4, row.length - 5).split('</td><td>')
           rowTexts = rowTexts.filter(text => text.length) // Remove any empty string columns.
-          // Check for teacher initials and remove them from the parser.
+          // Check for teacher initials and remove them from the Parser.
           // This will (obviously) only run when loading teacher schedules.
           if (schedule.initials) {
             rowTexts = rowTexts.filter(text => text !== schedule.initials)
@@ -573,7 +573,7 @@ function Nova() {
         //   finalRows.forEach(row => {
         //     row = row.original
         //     const rowTexts = row.substring(4, row.length - 5).split('</td><td>').join('').split(' ').join('')
-        //     const rowMatch = parser.calcStringSimilarity(flatTexts, rowTexts)
+        //     const rowMatch = Parser.calcStringSimilarity(flatTexts, rowTexts)
         //     if (rowMatch > match) {
         //       matchedRow = row
         //     }
@@ -659,13 +659,13 @@ function Nova() {
 
   function downloadPdfSchedule(url) {
     return new Promise((resolve, reject) => {
-      const parser = new pdfp()
-      parser.on('pdfParser_dataError', error => reject(error))
-      parser.on('pdfParser_dataReady', rawData => resolve(rawData))
-      // Perform request and pipe PDF parser.
+      const Parser = new pdfp()
+      Parser.on('pdfParser_dataError', error => reject(error))
+      Parser.on('pdfParser_dataReady', rawData => resolve(rawData))
+      // Perform request and pipe PDF Parser.
       const req = request({ url: url, encoding: null }).on('response', (res) => {
         if (res.statusCode === 200) {
-          req.pipe(parser)
+          req.pipe(Parser)
         } else {
           reject('PDF does not exist.')
         }
@@ -675,10 +675,10 @@ function Nova() {
 
   function loadLocalPdfSchedule(path) {
     return new Promise((resolve, reject) => {
-      const parser = new pdfp()
-      parser.on('pdfParser_dataError', error => reject(error))
-      parser.on('pdfParser_dataReady', rawData => resolve(rawData))
-      parser.loadPDF(path)
+      const Parser = new pdfp()
+      Parser.on('pdfParser_dataError', error => reject(error))
+      Parser.on('pdfParser_dataReady', rawData => resolve(rawData))
+      Parser.loadPDF(path)
     })
   }
 
@@ -833,10 +833,11 @@ function Nova() {
     let titleCourseCode = ''
     for (let code in courseList) {
       const course = courseList[code]
-      if (title.indexOf(course) > -1) {
+      if (title.toLowerCase().indexOf(course.toLowerCase()) > -1) {
         titleCourseCode = code
         guarenteedTitle = course
-        title = title.replace(course, '')
+        const cIndex = title.toLowerCase().indexOf(course.toLowerCase()) + course.toLowerCase().length
+        title = title.substr(cIndex, title.length)
       }
     }
 
@@ -868,28 +869,27 @@ function Nova() {
     }
 
     schedules.forEach(schedule => {
-      if (schedule.typeKey === 0) {
-        // Teachers
-        if (title.indexOf(' ' + schedule.initials + ' ') > -1 || title.indexOf(' ' + schedule.initials) === (title.length - (schedule.initials.length + 1)) ) {
-          title = title.replace(schedule.initials, '')
-          results.teachers.push({
-            name: schedule.name,
-            id: schedule.id
-          })
-        }
-      } else {
-        // Classes & Rooms
-        if (title.indexOf(' ' + schedule.name + ' ') > -1 || (title.indexOf(' ' + schedule.name) > -1 && title.indexOf(' ' + schedule.name) === (title.length - (schedule.name.length + 1))) ) {
-          title = title.replace(schedule.name, '')
-          results[schedule.typeKey === 1 ? 'classes' : 'rooms'].push({
+      const searchKey = schedule.typeKey === 0 ? schedule.initials : schedule.name
+      const keyIndex = title.indexOf(searchKey)
+      if (keyIndex > -1) {
+        const charBefore = title.substr(keyIndex - 1, 1).match(/[a-z]/i)
+        const charAfter = title.substr(keyIndex + searchKey.length, 1).match(/[a-z]/i)
+        if (!charBefore && !charAfter) {
+          title = title.replace(searchKey, '')
+          results[scheduleTypes[schedule.typeKey].slug].push({
             name: schedule.name,
             id: schedule.id
           })
         }
       }
     })
+
+    // Remove any remaining colon's
+    while (title.indexOf(':') > -1) {
+      title = title.replace(':', '')
+    }
     
-    results.title = guarenteedTitle ? guarenteedTitle : parser.cleanSpacesFromString(title)
+    results.title = guarenteedTitle ? guarenteedTitle : Parser.cleanSpacesFromString(title)
     
     return results
   }
@@ -940,7 +940,7 @@ function Nova() {
         request(factory.generateNovaBaseUrl(school.novaId, school.novaCode, type.key), (error, response, body) => {
           if (error) return callback(error)
 
-          types[i] = parser.parseNovaTypeData(body, type)
+          types[i] = Parser.parseNovaTypeData(body, type)
           callback()
         })
       }, (error) => {
@@ -956,7 +956,7 @@ function Nova() {
       request(factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
         if (error) return reject(error)
 
-        const data = parser.parseNovaBaseData(body)
+        const data = Parser.parseNovaBaseData(body)
         if (data.complete) return resolve(data)
 
         downloadNovaScheduleLists(school, data.types).then(data => resolve(data))
@@ -997,11 +997,11 @@ function Nova() {
 
   function prepareSchoolData(data, schoolId) {
     const schedules = []
-    data.forEach((typeObj, key) => {
+    data.forEach((typeObj) => {
       typeObj.schedules.forEach((schedule) => {
         schedule.uuid = schedule.id.substr(1, schedule.id.length - 2)
         schedule.schoolId = schoolId
-        schedule.typeKey = key
+        schedule.typeKey = typeObj.key
         delete schedule.id
         
         schedules.push(schedule)
