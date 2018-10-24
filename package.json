@@ -7,9 +7,10 @@
   "scripts": {
     "start": "node src/index.js",
     "dbcreate": "node src/scripts/create-database.js",
-    "dbsync": "node src/scripts/synchronize-database.js"
+    "dbsync": "node src/scripts/synchronize-database.js",
+    "novaup": "node src/jobs/nova-updater.js"
   },
-  "keywords": [],
+  "keywords": [ "api" ],
   "license": "MIT",
   "dependencies": {
     "async": "^2.6.1",
@@ -24,8 +25,6 @@
     "pdf2json": "^1.1.7",
     "request": "^2.88.0",
     "rimraf": "^2.6.2",
-    "sequelize": "^4.38.1",
-    "tar": "^4.4.6",
-    "xml2js": "^0.4.19"
+    "sequelize": "^4.38.1"
   }
 }

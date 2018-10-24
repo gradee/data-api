@@ -1,5 +1,4 @@
 // Dependencies
-const fs = require('fs')
 const luxon = require('luxon')
 const request = require('request')
 const pdfp = require('pdf2json')
