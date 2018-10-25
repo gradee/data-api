@@ -7,9 +7,9 @@ const moment = require('moment')
 const crypto = require('crypto')
 
 // Helpers
-const factory = require('./factory')
+const Factory = require('./factory')
 const Parser = require('./parser')
-const skolverket = require('./skolverket')
+const Skolverket = require('./skolverket')
 
 function Nova() {
 
@@ -23,6 +23,8 @@ function Nova() {
     { name: 'Kurskod', slug: 'courses' },
     { name: 'Samling', slug: 'aulas' }
   ]
+
+  const languageListSE = ["A'tong","Abazinska","Abchaziska","Abujmaria","Acehnesiska","Acholi","Adnyamathanha","Adûnaiska","Adygeiska","Afrikaans","Afroamerikansk engelska","Ainu","Aka-Bo","Akha","ǂĀkhoe Haiǁom","Akkadiska","Akkalasamiska","Albanska","Aleutiska","Algonkinska","Algonkin-baskiskt pidginspråk","Altaiska","Amerikanskt teckenspråk","Amhariska","Ami","Anufo","Arabiska","Aragonska","Arameiska","Aranesiska","Arberesjiska","Armeniska","Arrernte","Arumänska","Arvanitiska","Assamesiska","Assyrisk nyarameiska","Assyriska","Asturiska","Atlantiska","Avariska","Avestiska","Aymara","Azerbajdzjanska","Awadhi","Badaga","Badinani","Balinesiska","Balkariska","Baluchiska","Bambara","Bandial","Banjaresiska","Bardi","Basjkiriska","Baskiska","Baskisk-isländskt pidginspråk","Batak","Batak Dairi","Batak Toba","Bemba","Bengali","Bhojpuri","Bijago","Bikol","Biloxi","Bishnupriya manipuri","Bislama","Bodo","Bokmål","Bosniska","Brahui","Bretonska","Brittiskt teckenspråk","Buginesiska","Bulgariska","Bunaba","Burushaski","Burjatiska","Burmesiska","C’lela","Čakavisk dialekt","Camtho","Cebuano","Cha'palaa","Chamorro","Chavacano","Chenchu","Chantiska","Chhattisgarhi","Cherokesiska","Chichewa","Cocoliche","Cree","Crow","Cucapa","Dagbani","Dairi Batak","Dalmatiska","Dandamimaria","Danska","Dari","Demotiska","Dhundari","Diouli","Divehi","Djamindjung","Djawi","Dogonspråk","Dogrib","Dongxiang","Duna","Dyaberdyaber","Dyugun","Dzongkha","Egyptiska","Elamitiska","Eldarin","Elsassiska","Embu","Emiliano-romagnolo","Enaresamiska","Engelska","Enxet","Entsiska","Erre","Erzya","Esperanto","Estniska","Etruskiska","Ewe","Extremaduriska","Extremvästlig muria","Eyak","Faliskiska","Fang","Feniciska","Feyli","Fijianska","Fijiansk hindi","Filipino","Finska","Flamländska","Folkspraak","Fon","Forndanska","Fornengelska","Fornfranska","Forngutniska","Fornhebreiska","Fornkymriska","Fornkyrkoslaviska","Fornliguriska","Fornmakedonska","Fornnordiska","Fornpersiska","Fornsvenska","Fornvästnordiska","Fornöstnordiska","Frankiska","Frankoprovensalska","Franska","Frisiska","Friuliska","Fula","Färöiska","Gadjerawang","Gagauziska","Galiciska","Galliska","Gambera","Gan","Garifuna","Garo","Ge'ez","Gegiska","Georgiska","Gilaki","Giyug","Gond","Gooniyandi","Gorani","Gotiska","Grekiska","Grekiska","Grönländska","Guaraní","Gujarati","Gunwinggu","Guambiano","Gutniska","Haitisk kreol","Hakka","Hariyanvi","Hausa","Hawaiiska","Hebreiska","Hettitiska","Hidatsa","Hindi","Hindko","Hixkaryána","ǂHua","Huarijio","Hui","Hurritiska","Högtyska","Ido","Igbo","Illyriska","Ilokano","Indisk kurux","Indonesiska","Ingermanlandsfinska","Ingriska","Interlingua","Inuktitut","Iñupiaq","Iriska","Isländska","Isländskt teckenspråk","Istriotiska","Italienska","Ithkuil","Jakutiska","Japanska","Japanska","Jarai","Javanesiska","Jiddisch","Jin","Jola","Judaeo-malayalam","Judaeo-marathi","Kajanasamiska","Kajkavisk dialekt","Kala Lagaw Ya","Kaldeisk nyarameiska","Kalmuckiska","Kamassiska","Kamba","Kammu","Kamu","Kanadensisk gäliska","Kannada","Kantonesiska","Kap Verde-kreol","Karaimiska","Karakalpakiska","Karamojong","Karelska","Kariska","Karpatorusinska","Kashmiri","Kasjubiska","Katalanska","Kayan Murik","Kazakiska","Kazukuru","Kelhori","Kerek","Khalkha","Khirwar","Khmer","Khond","Khowar","Khuzdul","Kikongo","Kikuyu","Kildinsamiska","Kilivila","Kinesiska","Kirgiziska","Kiribatiska","Kirundi","Kitja","Klassisk grekiska","Klassisk japanska","Klingonaase","Klingonska","Kodava takk","Koine","Kolami-naiki","Komi-syrjänska","Komoriska","Konkani","Koptiska","Koreanska","Korniska","Korraga korra","Korsikanska","Kri","Krimgotiska","Krimtatariska","Kroatiska","Kumbriska","Kurdiska","Kurux","Kwini","Kvänska","ǂKxʼauǁʼein","Kymriska","Kyrkslaviska","Laal","Laberiska","Ladino","Lakota","Lalo","Lampung","Lango","Langue d'oïl","Laotiska","Laragiya","Latin","Latino sine flexione","Lavukaleve","Laziska","Leet","Lekî","Lettiska","Fornliguriska","Liguriska","Likpe","Limbu","Limilngan","Lingala","Lingua Franca Nova","Lisu (språk)","Litauiska","Liviska","Loglan","Lojban","Lomavren","Lombardiska","Lozi","Luba-Kasai","Luganda","Luhya","Lulesamiska","Luo","Luri","Luviska","Lydiska","Lydiska (finsk dialekt)","Lykiska","Luxemburgiska","Lågskotska","Lågtyska","Maa","Maay Maay","Madngele","Maduresiska","Magahi","Maharashtri","Maithili","Makedonska","Makassariska","Malabariska","Malagassiska","Malajiska","Malapandaram","Malayalam","Maltesiska","Manchuiska","Manda","Mandarin","Mandeiska","Mandinka","Manna-dora","Mannan","Mansiska","Manx","Maori","Mapudungun","Maranunggu","Marathi","Maria","Maridan","Maridjabin","Marimanindji","Maringarr","Mariska","Marithiel","Mariyedi","Marshallesiska","Marti Ke","Mazenderani","Medelengelska","Medelfranska","Mehri","Meitei","Mentonska","Messapiska","Meänkieli","Mien","Milanesiska","Min","Min Bei","Minangkabau","Mirandesiska","Miriwung","Miskito","Miwa","Mizo","Mlabri","Mlahsö","Mohawk","Moksja","Moldaviska","Monegaskiska","Mongoliska","Montenegrinska","Mor (austronesiskt språk)","Mor (papuanskt språk)","Mozarabiska","Mpre","Mullukmulluk","Munsee","Muruwari","Murrinh-Patha","Mutsun","Månsing","Nach","Nadsat","Nafaanra","Nagarchal","Nagikurrunggurr","Nahuatl","Nama","Nauruanska","Navajo","Ndebele","Neapolitanska","Nederländska","Nepali","Nentsiska","Newari","Ngaanyatjarra","Nganasaniska","Ngarinyin","Ngomba","Nicaraguanskt teckenspråk","Nimanbur","N'Ko","Noongar","Nordndebele","Nordsamiska","Nordsotho","Normandiska","Norn","Norska","Norskt teckenspråk","Nǀu","Numee","Nungali","Nyigina","Nynorska","Nyulnyul","Nyöstsyriska","Occidental","Occitanska","Ojibwa","Ona","Oraon","Oriya","Oromo","Oskiska","Osmanska","Ossetiska","Palaiska","Pali","Pangasinan","Paniya","Panocho","Papiamento","Parja","Parji-gadaba","Pashto","Patwa","Persiska","Phuthi","Pikardiska","Piktiska","Pinghua","Pirahã","Pitcairnesiska","Pitesamiska","Pitjantjatjara","Polabiska","Polska","Portugisiska","Portuñol","Prakrit","Proto-värld","Provensalska","Prusiska","Pulaar","Punjabi","Purepecha","Qawasqar","Quechua","Quenya","Quiché","Rapa nui","Rejang","Romani","Romanica","Rumänska","Rusinska","Russenorsk","Rwanda","Ryūkyū","Ryska","Rätoromanska","Sakiska","Samoanska","Samslaviska","Sanskrit","Sardiska","Sasak","Saurashtra","Savosavo","Schweizertyska","Selkupiska","Semai","Semnam","Serbiska","Serbokroatiska","Serer","Setswana","Shaozhou tuhua","Shawi","Sheng","Shkhawri","Shona","Shughni","Sibe","Sibiriska språket","Sicilianska","Sikkimesiska","Siksika","Silbo Gomero","Simlish","Sindarin","Sindhi","Singalesiska","Siraiki","SiSwati","Siwu","Skoltsamiska","Skotsk gäliska","Slovakiska","Slovenska","Slovio","Sogdiska","Solresol","Somaliska","Soqotri","Sorbiska","Sotho","Squamish","Sranan","Spanska","Štokavisk dialekt","Sudoviska","Sumeriska","Sundanesiska","Surzjyk","Swahili","Svanetiska","Svenska","Svensk romani","Svenskt teckenspråk","Sydndebele","Sydsamiska","Syldaviska","Syriska","Tadzjikiska","Tagalog","Tahitiska","Tai lü","Tai nüa","Tamazight","Tamil","Tatariska","Tehuelche","Telugu","Tersamiska","Tetum","Thai","Thrakiska","Tiberiansk hebreiska","Tibetanska","Tigre","Tigrinska","Tiwi","Tjagataiska","Tjeckiska","Tjetjenska","Tjuvasjiska","Tlingit","Toba batak","Tokhariska A","Tokhariska B","Tok pisin","Toki pona","Tokelauanska","Tonganska","Toskiska","Transpiranto","Tsonga","Tsotsitaal","Tulu","Turkiska","Turkmeniska","Turoyo","Tuvaluanska","Tuvinska","Tyaraity","Tyska","Ubychiska","Udmurtiska","Uiguriska","Ukrainska","Umbriska","Umbugarla","Umesamiska","Ungerska","Urarteiska","Urdu","Urmiska","Urnordiska","Urgermanska","Urindoeuropeiska","Uru-Chipaya","Uzbekiska","Waddar","Wadjiginy","Wagiman","Valencianska","Vallonska","Walmajarri","Wambaya","Waray-waray","Warlpiri","Warrwa","Vediska","Venetiska","Venetianska","Vepsiska","Vietnamesiska","Wilawila","Wirangu","Vitryska","Volapük","Wolof","Worora","Votiska","Wu","Wulna","Wunambal","Vulgärlatin","Västarameiska","Västfrisiska","Västmuria","Väströna","Västra ökenspråket","Võru","Xhosa","Xiang","Xianghua","!Xóõ","Yaghnobi","Yalunka","Yankunytjatjara","Yawuru","Yimas","Yolngu Matha","Yoruba","Yurakaré","Zarfatiska","Zazaiska","Žemaitiska","Zenaga","Zhang-Zhung","Zhuang","Zulu"]
 
   const colorIndex = [
     '#000000',    // 0
@@ -749,7 +751,7 @@ function Nova() {
       // Click schedule width height ration: 536 x 784
 
       // First build the custom "fake" connection to the site.
-      factory.generateLessonDataUrl({
+      Factory.generateLessonDataUrl({
         novaId: school.novaId,
         novaCode: school.novaCode,
         id: '{' + schedule.uuid + '}',
@@ -792,7 +794,7 @@ function Nova() {
        */
 
       // Generate the schedule's PDF url
-      const pdfUrl = factory.generateNovaPdfUrl(school.novaId, schedule.typeKey, '{' + schedule.uuid + '}', week, true)
+      const pdfUrl = Factory.generateNovaPdfUrl(school.novaId, schedule.typeKey, '{' + schedule.uuid + '}', week, true)
 
       // Download the raw PDF data for the schedule.
       downloadPdfSchedule(pdfUrl).then(rawData => {
@@ -813,7 +815,7 @@ function Nova() {
     })
   }
 
-  function parseLessonTitle(title, schedules, courseList) {
+  function parseLessonTitle(title, typeKey, schedules, courseList) {
 
     // Remove any comma's before parsing.
     while (title.indexOf(',') > -1) {
@@ -828,6 +830,23 @@ function Nova() {
       courses: []
     }
 
+    let langCourse
+    let langCourseTitle
+    if (title.indexOf('Moderna språk') > -1) {
+      const pattern = /\bModerna\b \bSpråk\b [A-z\ åäöÅÄÖ]+ [1-7]/gmi
+      const match = title.match(pattern)
+      if (match) {
+        let string = match[0]
+        title = title.replace(match[0], '')
+        string = string.replace(/\bModerna\b \bSpråk\b /gmi, '')
+        const number = parseInt(string.match(/[1-7]/)[0])
+        string = string.replace(/ [1-7]/, '')
+
+        langCourse = 'Moderna språk ' + number
+        langCourseTitle = langCourse + ' (' + string + ')'
+      }
+    }
+
     let guarenteedTitle = ''
     let titleCourseCode = ''
     for (let code in courseList) {
@@ -837,6 +856,9 @@ function Nova() {
         guarenteedTitle = course
         const cIndex = title.toLowerCase().indexOf(course.toLowerCase()) + course.toLowerCase().length
         title = title.substr(cIndex, title.length)
+      } else if (langCourse && langCourse === course) {
+        titleCourseCode = code
+        guarenteedTitle = langCourseTitle
       }
     }
 
@@ -868,17 +890,19 @@ function Nova() {
     }
 
     schedules.forEach(schedule => {
-      const searchKey = schedule.typeKey === 0 ? schedule.initials : schedule.name
-      const keyIndex = title.indexOf(searchKey)
-      if (keyIndex > -1) {
-        const charBefore = title.substr(keyIndex - 1, 1).match(/[a-z]/i)
-        const charAfter = title.substr(keyIndex + searchKey.length, 1).match(/[a-z]/i)
-        if (!charBefore && !charAfter) {
-          title = title.replace(searchKey, '')
-          results[scheduleTypes[schedule.typeKey].slug].push({
-            name: schedule.name,
-            id: schedule.id
-          })
+      if ((typeKey === 1 && schedule.typeKey !== 1) || typeKey !== 1) {
+        const searchKey = schedule.typeKey === 0 ? schedule.initials : schedule.name
+        const keyIndex = title.indexOf(searchKey)
+        if (keyIndex > -1) {
+          const charBefore = title.substr(keyIndex - 1, 1).match(/[a-z]/i)
+          const charAfter = title.substr(keyIndex + searchKey.length, 1).match(/[a-z]/i)
+          if (!charBefore && !charAfter) {
+            title = title.replace(searchKey, '')
+            results[scheduleTypes[schedule.typeKey].slug].push({
+              name: schedule.name,
+              id: schedule.id
+            })
+          }
         }
       }
     })
@@ -895,15 +919,15 @@ function Nova() {
 
   function fetchNovaSchedule(novaId, typeKey, uuid, week, schedules) {
     return new Promise((resolve, reject) => {
-      const pdfUrl = factory.generateNovaPdfUrl(novaId, typeKey, '{' + uuid + '}', week)
+      const pdfUrl = Factory.generateNovaPdfUrl(novaId, typeKey, '{' + uuid + '}', week)
       
-      skolverket.getCourses(courses => {
+      Skolverket.getCourses(courses => {
         downloadPdfSchedule(pdfUrl).then(data => {
           const lessonList = parsePdfSchedule(data, week)
           const lessons = []
           lessonList.forEach(lesson => {
             if (schedules) {
-              const lessonData = parseLessonTitle(lesson.meta.text, schedules, courses)
+              const lessonData = parseLessonTitle(lesson.meta.text, typeKey, schedules, courses)
               lessonData.startTime = lesson.meta.startTime.toISO()
               lessonData.endTime = lesson.meta.endTime.toISO()
               lessons.push(lessonData)
@@ -936,7 +960,7 @@ function Nova() {
       async.eachOf(types, (type, i, callback) => {
         types[i].name = scheduleTypes[type.key].name
 
-        request(factory.generateNovaBaseUrl(school.novaId, school.novaCode, type.key), (error, response, body) => {
+        request(Factory.generateNovaBaseUrl(school.novaId, school.novaCode, type.key), (error, response, body) => {
           if (error) return callback(error)
 
           types[i] = Parser.parseNovaTypeData(body, type)
@@ -952,7 +976,7 @@ function Nova() {
 
   function downloadSchoolData(school) {
     return new Promise((resolve, reject) => {
-      request(factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
+      request(Factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
         if (error) return reject(error)
 
         const data = Parser.parseNovaBaseData(body)
@@ -965,7 +989,7 @@ function Nova() {
 
   function getSchoolMetaData(school) {
     return new Promise((resolve, reject) => {
-      request(factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
+      request(Factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
         if (error) return reject(error)
 
         const strStart = '<span id="CounterLabel">'

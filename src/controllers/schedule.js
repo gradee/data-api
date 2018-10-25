@@ -7,7 +7,7 @@ const Op = require('sequelize').Op
 const models = require('../models')
 
 // Helpers
-const nova = require('../helpers/nova')
+const Nova = require('../helpers/nova')
 
 router.get('/', (req, res) => {
   res.status(400).send('No resource specified.')
@@ -47,7 +47,7 @@ router.get('/:uuid', (req, res) => {
       raw: true
     }).then(schedules => {
 
-      nova.fetchNovaSchedule(schedule.school.novaId, schedule.typeKey, schedule.uuid, week, schedules)
+      Nova.fetchNovaSchedule(schedule.school.novaId, schedule.typeKey, schedule.uuid, week, schedules)
         .then(data => {
           res.json(data)
         })

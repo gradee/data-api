@@ -1,6 +1,9 @@
+// Dependencies
 const luxon = require('luxon')
-const factory = require('../helpers/factory')
-const nova = require('../helpers/nova')
+
+// Helpers
+const Factory = require('../helpers/factory')
+const Nova = require('../helpers/nova')
 
 const schedules = [
   {
@@ -35,11 +38,11 @@ const schedules = [
 
 const s = schedules[3]
 
-const pdfUrl = factory.generateNovaPdfUrl(s.novaId, s.typeKey, s.id, s.week)
+const pdfUrl = Factory.generateNovaPdfUrl(s.novaId, s.typeKey, s.id, s.week)
 
 const week = s.week || luxon.DateTime.local().get('weekNumber')
-nova.downloadPdfSchedule(pdfUrl).then(data => {
-  const results = nova.parsePdfSchedule(data, )
+Nova.downloadPdfSchedule(pdfUrl).then(data => {
+  const results = Nova.parsePdfSchedule(data, )
 
   results.forEach(obj => {
     console.log(obj.meta)

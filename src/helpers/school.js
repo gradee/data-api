@@ -80,8 +80,28 @@ function School() {
     })
   }
 
+  function slugIsUnique(slug, currentSchool = null) {
+    return new Promise((resolve, reject) => {
+      models.School.findOne({
+        where: {
+          slug: slug
+        }
+      }).then(school => {
+        let result = { slugIsUnique: true }
+        if (school) {
+          result.slugIsUnique = false
+          if (currentSchool && currentSchool.id === school.id) {
+            result.isCurrentSlug = true
+          }
+        }
+        resolve(result)
+      }).catch(error => reject(error))
+    })
+  }
+
   return {
-    updateNovaData
+    updateNovaData,
+    slugIsUnique
   }
 }
 
