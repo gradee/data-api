@@ -38,9 +38,6 @@ router.get('/:uuid', (req, res) => {
     // Load all teachers, classes and rooms to parse the title with.
     models.Schedule.findAll({
       where: {
-        typeKey: {
-          [Op.or]: [0, 1, 4]
-        },
         schoolId: schedule.school.id
       },
       attributes: [ ['uuid', 'id'], 'name', 'initials', 'typeKey' ],
