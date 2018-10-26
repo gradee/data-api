@@ -53,12 +53,12 @@ function Factory() {
     return url
   }
 
-  function generateNovaPdfUrl(novaId, typeKey, id, week = '', disrupt = false) {
+  function generateNovaPdfUrl(novaId, typeKey, uuid, week = '', disrupt = false) {
     // Params: (schoolId, scheduleType, scheduleId, week, disrupt = false)
     let url = novaPdfBaseUrl
     url += '&schoolid=' + novaId
     url += '&type=' + typeKey
-    url += '&id=' + id
+    url += '&id=' + '{' + uuid + '}'
     url += '&week=' + week
     url += '&period=&mode=0&colors=32&width=2480&height=3500'
     if (!disrupt) url += '&printer=1'

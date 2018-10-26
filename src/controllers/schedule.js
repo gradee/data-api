@@ -1,7 +1,6 @@
 // Router for /schedule
 const router = require('express').Router()
 const luxon = require('luxon')
-const Op = require('sequelize').Op
 
 // Models
 const models = require('../models')
@@ -35,24 +34,13 @@ router.get('/:uuid', (req, res) => {
       }
     }
 
-    // Load all teachers, classes and rooms to parse the title with.
-    models.Schedule.findAll({
-      where: {
-        schoolId: schedule.school.id
-      },
-      attributes: [ ['uuid', 'id'], 'name', 'initials', 'typeKey' ],
-      raw: true
-    }).then(schedules => {
-
-      Nova.fetchNovaSchedule(schedule.school.novaId, schedule.typeKey, schedule.uuid, week, schedules)
-        .then(data => {
-          res.json(data)
-        })
-      .catch(error => {
-        console.log(error)
-        res.status(500).send('Something went wrong.')
+    Nova.getSchedule(schedule.school, schedule, week)
+      .then(data => {
+        res.json(data)
       })
-
+    .catch(error => {
+      console.log(error)
+      res.status(500).send('Something went wrong.')
     })
   })
 })
