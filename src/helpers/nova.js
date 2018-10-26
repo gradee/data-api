@@ -823,11 +823,7 @@ function Nova() {
     }
 
     const results = {
-      title: '',
-      teachers: [],
-      rooms: [],
-      classes: [],
-      courses: []
+      title: ''
     }
 
     let langCourse
@@ -873,6 +869,7 @@ function Nova() {
       })
       if (texts.length) {
         if (code === titleCourseCode) titleCourseCode = ''
+        if (!results.hasOwnProperty('courses')) results.courses = []
         results.courses.push({
           name: courseList[code],
           code: code,
@@ -882,6 +879,7 @@ function Nova() {
     }
 
     if (titleCourseCode) {
+      if (!results.hasOwnProperty('courses')) results.courses = []
       results.courses.push({
         name: courseList[titleCourseCode],
         code: titleCourseCode
@@ -898,6 +896,9 @@ function Nova() {
           const charAfter = title.substr(keyIndex + searchKey.length, 1).match(/[a-z]/i)
           if (!charBefore && !charAfter) {
             title = title.replace(searchKey, '')
+            if (!results.hasOwnProperty([scheduleTypes[schedule.typeKey].slug])) {
+              results[scheduleTypes[schedule.typeKey].slug] = []
+            }
             results[scheduleTypes[schedule.typeKey].slug].push({
               name: schedule.name,
               id: schedule.id
@@ -911,8 +912,10 @@ function Nova() {
     while (title.indexOf(':') > -1) {
       title = title.replace(':', '')
     }
-    
+    // Clean the title, and if it is tied to a course, set the title to the course's title
     results.title = guarenteedTitle ? guarenteedTitle : Parser.cleanSpacesFromString(title)
+
+    
     
     return results
   }
