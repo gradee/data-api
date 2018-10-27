@@ -118,8 +118,8 @@ function Nova() {
   function ensureLocalSchedule(school, schedule, week) {
     return new Promise((resolve, reject) => {
       const file = storagePath + '/' + schedule.uuid + '_' + week + '.pdf'
-      fs.exists(file, (exists) => {
-        if (exists) {
+      fs.access(file, fs.constants.F_OK, (err) => {
+        if (!err) {
           checkScheduleWeekUpdate(school, schedule, week)
             .then(needsUpdate => {
               if (!needsUpdate) return resolve()
