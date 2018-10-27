@@ -13,7 +13,7 @@ function updateAllSchoolData(force = false) {
   models.School.findAll().then(schools => {
     console.log('')
     console.log('-----------------------------------------------------------------')
-    console.log('  Update process started at ' + luxon.DateTime.local().toISO())
+    console.log('  Update process started at ' + luxon.DateTime.local().setZone('Europe/Stockholm').toISO())
     console.log('-----------------------------------------------------------------')
     console.log('')
     async.eachSeries(schools, (school, callback) => {
@@ -21,10 +21,10 @@ function updateAllSchoolData(force = false) {
       console.log('-----')
       console.log('  ' + school.name)
       console.log('-----')
-      console.log('Started at: ' + luxon.DateTime.local().toISO())
+      console.log('Started at: ' + luxon.DateTime.local().setZone('Europe/Stockholm').toISO())
       School.updateNovaData(school, force)
         .then(didUpdate => {
-          console.log('Finished at: ' + luxon.DateTime.local().toISO())
+          console.log('Finished at: ' + luxon.DateTime.local().setZone('Europe/Stockholm').toISO())
           console.log('Did update: ' + didUpdate)
           console.log('')
           callback()
@@ -34,7 +34,7 @@ function updateAllSchoolData(force = false) {
       if (error) return console.log(error)
   
       console.log('-----------------------------------------------------------------')
-      console.log('  Update process finished at: ' + luxon.DateTime.local().toISO())
+      console.log('  Update process finished at: ' + luxon.DateTime.local().setZone('Europe/Stockholm').toISO())
       console.log('-----------------------------------------------------------------')
 
       if (args.indexOf('--no-job') > -1) {

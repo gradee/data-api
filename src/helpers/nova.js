@@ -3,10 +3,11 @@ const luxon = require('luxon')
 const request = require('request')
 const pdfp = require('pdf2json')
 const async = require('async')
-const moment = require('moment')
 const http = require('http')
 const fs = require('fs')
 const path = require('path')
+const moment = require('moment')
+moment.tz.setDefault('Europe/Stockholm')
 
 // Helpers
 const Factory = require('./factory')
@@ -71,7 +72,7 @@ function Nova() {
       }).then(result => {
         if (result) {
           models.ScheduleWeek.update({
-            fileUpdatedAt: luxon.DateTime.local().toSQL()
+            fileUpdatedAt: luxon.DateTime.local().setZone('Europe/Stockholm').toSQL()
           }, {
             where: {
               scheduleId: schedule.id,
@@ -83,7 +84,7 @@ function Nova() {
           models.ScheduleWeek.create({
             scheduleId: schedule.id,
             weekNumber: week,
-            fileUpdatedAt: luxon.DateTime.local().toSQL()
+            fileUpdatedAt: luxon.DateTime.local().setZone('Europe/Stockholm').toSQL()
           }).then(_ => resolve())
           .catch(error => reject(error))
         }

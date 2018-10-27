@@ -4,6 +4,7 @@ require('dotenv').config()
 // Dependencies
 const request = require('request')
 const moment = require('moment')
+moment.tz.setDefault('Europe/Stockholm')
 
 function Factory() {
   const novaViewBaseUrl = 'http://www.novasoftware.se/webviewer/(S(cuybov55kqxjfn45yuspxieg))/MZDesign1.aspx'

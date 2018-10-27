@@ -2,6 +2,7 @@
 const Op = require('sequelize').Op
 const async = require('async')
 const moment = require('moment')
+moment.tz.setDefault('Europe/Stockholm')
 
 // Helpers
 const Nova = require('./nova')

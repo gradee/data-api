@@ -1,7 +1,8 @@
 // Router for /schedule
 const router = require('express').Router()
 const luxon = require('luxon')
-const Op = require('sequelize').Op
+const moment = require('moment')
+moment.tz.setDefault('Europe/Stockholm')
 
 // Helpers
 const Nova = require('../helpers/nova')
@@ -258,8 +259,10 @@ router.get('/:schoolSlug/:typeSlug/:uuid', (req, res) => {
       uuid: req.params.uuid,
       typeKey: typeKey
     },
-    raw: true,
-    attributes: [['uuid', 'id'], 'name', 'firstName', 'lastName', 'initials', 'className']
+    include: [{
+      model: models.School,
+      required: true
+    }]
   }).then(schedule => {
     if (!schedule) return res.status(404).send('Not found.')
 
@@ -267,7 +270,34 @@ router.get('/:schoolSlug/:typeSlug/:uuid', (req, res) => {
       if (schedule[key] === null) delete schedule[key]
     }
 
-    res.json(schedule)
+    Nova.getScheduleData(schedule.school, schedule, luxon.DateTime.local().setZone('Europe/Stockholm').get('weekNumber'))
+      .then(data => {
+        const result = {
+          id: schedule.uuid,
+          name: schedule.name
+        }
+        if (schedule.firstName) result.firstName = schedule.firstName
+        if (schedule.lastName) result.firstName = schedule.lastName
+        if (schedule.initials) result.initials = schedule.initials
+        if (schedule.className) result.className = schedule.className
+        result.currentLessons = []
+        
+        const now = moment()
+        const lessons = []
+        data.forEach(lesson => {
+          const start = moment(lesson.startTime)
+          const end = moment(lesson.endTime)
+          if (now.isSameOrAfter(start) && now.isBefore(end)) {
+            result.currentLessons.push(lesson)
+          }
+        })
+
+        res.json(result)
+      })
+    .catch(error => {
+      console.log(error)
+      res.status(500).send('Something went wrong.')
+    })
   })
 })
 

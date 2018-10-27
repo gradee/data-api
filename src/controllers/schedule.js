@@ -25,7 +25,7 @@ router.get('/:uuid', (req, res) => {
     if (!schedule) return res.status(404).send('Not found.')
 
     // Grab current week
-    let week = luxon.DateTime.local().get('weekNumber')
+    let week = luxon.DateTime.local().setZone('Europe/Stockholm').get('weekNumber')
     if (req.query.w) {
       if (!isNaN(+req.query.w) && isFinite(req.query.w)) {
         if (parseInt(req.query.w) > 0 && parseInt(req.query.w) <= 53) {
@@ -58,7 +58,7 @@ router.get('/:uuid/pdf', (req, res) => {
     if (!schedule) return res.status(404).send('Not found.')
 
     // Grab current week
-    let week = luxon.DateTime.local().get('weekNumber')
+    let week = luxon.DateTime.local().setZone('Europe/Stockholm').get('weekNumber')
     if (req.query.w) {
       if (!isNaN(+req.query.w) && isFinite(req.query.w)) {
         if (parseInt(req.query.w) > 0 && parseInt(req.query.w) <= 53) {
