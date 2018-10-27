@@ -140,7 +140,7 @@ function Nova() {
     })
   }
 
-  function getSchedule(school, schedule, week) {
+  function getScheduleData(school, schedule, week) {
     return new Promise((resolve, reject) => {
       models.Schedule.findAll({
         where: {
@@ -185,6 +185,21 @@ function Nova() {
           resolve([])
         })
       }).catch(error => reject(error))
+    })
+  }
+
+  function getSchedulePdf(school, schedule, week) {
+    return new Promise((resolve, reject) => {
+      ensureLocalSchedule(school, schedule, week)
+        .then(_ => {
+          const file = storagePath + '/' + schedule.uuid + '_' + week + '.pdf'
+          fs.readFile(file, (err, data) => {
+            if (err) return reject(err)
+
+            resolve(data)
+          })
+        })
+      .catch(error => reject(error))
     })
   }
 
@@ -287,7 +302,8 @@ function Nova() {
     downloadSchedule,
     downloadPdfSchedule,
     parseSchedule,
-    getSchedule,
+    getScheduleData,
+    getSchedulePdf,
     downloadSchoolData,
     checkSchoolDataUpdate,
     prepareSchoolData
