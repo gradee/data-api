@@ -7,11 +7,12 @@ router.use('/schools', require('./schools'))
 router.get('/', (req, res) => {
   res.json({
     availableRoutes: [
-      '/schedule/:scheduleId',
       '/schools',
       '/schools/:schoolSlug',
       '/schools/:schoolSlug/:typeSlug',
-      '/schools/:schoolSlug/:typeSlug/:scheduleId'
+      '/schools/:schoolSlug/:typeSlug/:scheduleId',
+      '/schedule/:scheduleId',
+      '/schedule/:scheduleId/pdf'
     ]
   })
 })
