@@ -61,15 +61,81 @@ function Nova() {
     })
   }
 
-  function ensureLocalSchedule(novaId, schedule, week) {
+  function upsertScheduleWeek(schedule, week) {
+    return new Promise((resolve, reject) => {
+      models.ScheduleWeek.findOne({
+        where: {
+          scheduleId: schedule.id,
+          weekNumber: week
+        }
+      }).then(result => {
+        if (result) {
+          models.ScheduleWeek.update({
+            fileUpdatedAt: luxon.DateTime.local().toSQL()
+          }, {
+            where: {
+              scheduleId: schedule.id,
+              weekNumber: week
+            }
+          }).then(_ => resolve())
+          .catch(error => reject(error))
+        } else {
+          models.ScheduleWeek.create({
+            scheduleId: schedule.id,
+            weekNumber: week,
+            fileUpdatedAt: luxon.DateTime.local().toSQL()
+          }).then(_ => resolve())
+          .catch(error => reject(error))
+        }
+      }).catch(error => reject(error))
+    })
+  }
+
+  function checkScheduleWeekUpdate(school, schedule, week) {
+    return new Promise((resolve, reject) => {
+      models.School.findOne({
+        where: {
+          id: school.id
+        }
+      }).then(schoolObj => {
+        models.ScheduleWeek.findOne({
+          where: {
+            scheduleId: schedule.id,
+            weekNumber: week
+          }
+        }).then(scheduleWeek => {
+          if (!scheduleWeek) return resolve(true)
+          
+          const schoolDate = moment(schoolObj.novaDataUpdatedAt)          
+          const scheduleDate = moment(scheduleWeek.fileUpdatedAt)
+
+          resolve(scheduleDate.isBefore(schoolDate))
+        }).catch(error => reject(error))
+      }).catch(error => reject(error))
+    })
+  }
+
+  function ensureLocalSchedule(school, schedule, week) {
     return new Promise((resolve, reject) => {
       const file = storagePath + '/' + schedule.uuid + '_' + week + '.pdf'
       fs.exists(file, (exists) => {
-        if (exists) return resolve()
+        if (exists) {
+          checkScheduleWeekUpdate(school, schedule, week)
+            .then(needsUpdate => {
+              if (!needsUpdate) return resolve()
 
-        downloadSchedule(novaId, schedule, week)
-          .then(_ => resolve())
-        .catch(error => reject(error))
+              downloadSchedule(school.novaId, schedule, week)
+                .then(_ => upsertScheduleWeek(schedule, week))
+                .then(_ => resolve())
+              .catch(error => reject(error))
+            })
+          .catch(error => reject(error))
+        } else {
+          downloadSchedule(school.novaId, schedule, week)
+            .then(_ => upsertScheduleWeek(schedule, week))
+            .then(_ => resolve())
+          .catch(error => reject(error))
+        }
       })
     })
   }
@@ -83,7 +149,7 @@ function Nova() {
         attributes: [ ['uuid', 'id'], 'name', 'initials', 'typeKey' ],
         raw: true
       }).then(schedules => {
-        ensureLocalSchedule(school.novaId, schedule, week)
+        ensureLocalSchedule(school, schedule, week)
           .then(_ => parseSchedule(schedule, week))
           .then(data => {
             // Load course list from Skolverket API
