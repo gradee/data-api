@@ -39,6 +39,7 @@ function Nova() {
   function downloadSchedule(novaId, schedule, week) {
     return new Promise((resolve, reject) => {
       const pdfUrl = Factory.generateNovaPdfUrl(novaId, schedule.typeKey, schedule.uuid, week)
+      console.log(pdfUrl)
 
       http.get(pdfUrl, (res) => {
         if (res.statusCode === 200) {
@@ -46,7 +47,7 @@ function Nova() {
           res.pipe(write)
           write.on('finish', _ => resolve())
         } else {
-          reject() // PDF not found.
+          reject('PDF not found.')
         }
       })
     })
@@ -159,10 +160,12 @@ function Nova() {
               const lessons = []
               lessonList.forEach(lesson => {
                 if (schedules) {
-                  const lessonData = Parser.parseLessonTitle(lesson.meta.text, schedule.typeKey, schedules, courses)
-                  lessonData.startTime = lesson.meta.startTime.toISO()
-                  lessonData.endTime = lesson.meta.endTime.toISO()
-                  lessons.push(lessonData)
+                  let lessonDataList = Parser.parseLessonTitle(lesson.meta.text, schedule.typeKey, schedules, courses)
+                  lessonDataList.forEach(lessonData => {
+                    lessonData.startTime = lesson.meta.startTime.toISO()
+                    lessonData.endTime = lesson.meta.endTime.toISO()
+                    lessons.push(lessonData)
+                  })
                 } else {
                   lessons.push({
                     title: lesson.meta.text,
@@ -245,7 +248,7 @@ function Nova() {
         if (error) return reject(error)
 
         const data = Parser.parseNovaBaseData(body)
-        if (data.complete) return resolve(data)
+        if (data.complete) return resolve(data.types)
 
         downloadNovaScheduleLists(school, data.types).then(data => resolve(data))
       })

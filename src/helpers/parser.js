@@ -162,7 +162,7 @@ function Parser() {
         const typeKey = parseInt(typeOption.substring(typeOption.indexOf('value="') + 7, typeOption.indexOf('">')))
         const type = {
           key: typeKey,
-          name: novaTypes[typeKey],
+          name: scheduleTypes[typeKey].name,
           schedules: []
         }
 
@@ -170,7 +170,7 @@ function Parser() {
         selectHtml = selectHtml.substring(selectHtml.indexOf('</option>') + 9, selectHtml.length)
         while (selectHtml.indexOf('<option') > -1) {
           const entity = parseNovaOptionData(selectHtml.substring(selectHtml.indexOf('<option'), selectHtml.indexOf('</option>') + 9), type)
-          if (entity) type.entities.push(entity)
+          if (entity) type.schedules.push(entity)
           selectHtml = selectHtml.substring(selectHtml.indexOf('</option>') + 9, selectHtml.length)
         }
 
@@ -523,106 +523,130 @@ function Parser() {
   }
 
   function parseLessonTitle(title, typeKey, schedules, courseList) {
+    const originalTitle = title
 
     // Remove any comma's before parsing.
     while (title.indexOf(',') > -1) {
       title = title.replace(',', ' ')
     }
 
-    const results = {
-      title: ''
-    }
-
-    let langCourse
-    let langCourseTitle
-    if (title.indexOf('Moderna språk') > -1) {
-      const pattern = /\bModerna\b \bSpråk\b [A-z\ åäöÅÄÖ]+ [1-7]/gmi
-      const match = title.match(pattern)
-      if (match) {
-        let string = match[0]
-        title = title.replace(match[0], '')
-        string = string.replace(/\bModerna\b \bSpråk\b /gmi, '')
-        const number = parseInt(string.match(/[1-7]/)[0])
-        string = string.replace(/ [1-7]/, '')
-
-        langCourse = 'Moderna språk ' + number
-        langCourseTitle = langCourse + ' (' + string + ')'
+    const courses = []
+    for (let code in courseList) {
+      if (title.toLowerCase().indexOf(courseList[code].toLowerCase()) > -1 || title.indexOf(code) > -1) {
+        courses.push(code)
       }
     }
 
-    let guarenteedTitle = ''
-    let titleCourseCode = ''
-    for (let code in courseList) {
-      const course = courseList[code]
-      if (title.toLowerCase().indexOf(course.toLowerCase()) > -1) {
-        titleCourseCode = code
-        guarenteedTitle = course
-        const cIndex = title.toLowerCase().indexOf(course.toLowerCase()) + course.toLowerCase().length
-        title = title.substr(cIndex, title.length)
-      } else if (langCourse && langCourse === course) {
-        titleCourseCode = code
-        guarenteedTitle = langCourseTitle
-      }
-    }
-
-    const titleParts = title.split(' ')
-    for (let code in courseList) {
-      const texts = []
-      titleParts.forEach(part => {
-        if (part.indexOf(code) > -1) {
-          texts.push(part)
-          title = title.replace(part, '')
-        }
+    const lessonStrings = []
+    if (courses.length > 1) {
+      courses.forEach((code, i) => {
+        const startIndex = originalTitle.indexOf(courseList[code])
+        const endIndex = (i < (courses.length - 1)) ? originalTitle.indexOf(courseList[courses[i + 1]]) - 1 : originalTitle.length
+        lessonStrings.push(originalTitle.substring(startIndex, endIndex))
       })
-      if (texts.length) {
-        if (code === titleCourseCode) titleCourseCode = ''
+    } else {
+      lessonStrings.push(title)
+    }
+
+    const lessons = []
+    lessonStrings.forEach(titleString => {
+      const results = {
+        title: ''
+      }
+
+      let langCourse
+      let langCourseTitle
+      if (titleString.indexOf('Moderna språk') > -1) {
+        const pattern = /\bModerna\b \bSpråk\b [A-z\ åäöÅÄÖ]+ [1-7]/gmi
+        const match = titleString.match(pattern)
+        if (match) {
+          let string = match[0]
+          titleString = titleString.replace(match[0], '')
+          string = string.replace(/\bModerna\b \bSpråk\b /gmi, '')
+          const number = parseInt(string.match(/[1-7]/)[0])
+          string = string.replace(/ [1-7]/, '')
+
+          langCourse = 'Moderna språk ' + number
+          langCourseTitle = langCourse + ' (' + string + ')'
+        }
+      }
+
+      let guarenteedTitle = ''
+      let titleCourseCode = ''
+      for (let code in courseList) {
+        const course = courseList[code]
+        if (titleString.toLowerCase().indexOf(course.toLowerCase()) > -1) {
+          titleCourseCode = code
+          guarenteedTitle = course
+          const cIndex = titleString.toLowerCase().indexOf(course.toLowerCase()) + course.toLowerCase().length
+          titleString = titleString.substr(cIndex, titleString.length)
+        } else if (langCourse && langCourse === course) {
+          titleCourseCode = code
+          guarenteedTitle = langCourseTitle
+        }
+      }
+
+      const titleParts = titleString.split(' ')
+      for (let code in courseList) {
+        const texts = []
+        titleParts.forEach(part => {
+          if (part.indexOf(code) > -1) {
+            texts.push(part)
+            titleString = titleString.replace(part, '')
+          }
+        })
+        if (texts.length) {
+          if (code === titleCourseCode) titleCourseCode = ''
+          if (!results.hasOwnProperty('courses')) results.courses = []
+          results.courses.push({
+            name: courseList[code],
+            code: code,
+            groups: texts
+          })
+        }
+      }
+
+      if (titleCourseCode) {
         if (!results.hasOwnProperty('courses')) results.courses = []
         results.courses.push({
-          name: courseList[code],
-          code: code,
-          groups: texts
+          name: courseList[titleCourseCode],
+          code: titleCourseCode
         })
+        titleCourseCode = ''
       }
-    }
 
-    if (titleCourseCode) {
-      if (!results.hasOwnProperty('courses')) results.courses = []
-      results.courses.push({
-        name: courseList[titleCourseCode],
-        code: titleCourseCode
-      })
-      titleCourseCode = ''
-    }
-
-    schedules.forEach(schedule => {
-      if ((typeKey === 1 && schedule.typeKey !== 1) || typeKey !== 1) {
-        const searchKey = schedule.typeKey === 0 ? schedule.initials : schedule.name
-        const keyIndex = title.indexOf(searchKey)
-        if (keyIndex > -1) {
-          const charBefore = title.substr(keyIndex - 1, 1).match(/[a-z]/i)
-          const charAfter = title.substr(keyIndex + searchKey.length, 1).match(/[a-z]/i)
-          if (!charBefore && !charAfter) {
-            title = title.replace(searchKey, '')
-            if (!results.hasOwnProperty([scheduleTypes[schedule.typeKey].slug])) {
-              results[scheduleTypes[schedule.typeKey].slug] = []
+      schedules.forEach(schedule => {
+        if ((typeKey === 1 && schedule.typeKey !== 1) || typeKey !== 1) {
+          const searchKey = schedule.typeKey === 0 ? schedule.initials : schedule.name
+          const keyIndex = titleString.indexOf(searchKey)
+          if (keyIndex > -1) {
+            const charBefore = titleString.substr(keyIndex - 1, 1).match(/[a-z]/i)
+            const charAfter = titleString.substr(keyIndex + searchKey.length, 1).match(/[a-z]/i)
+            if (!charBefore && !charAfter) {
+              titleString = titleString.replace(searchKey, '')
+              if (!results.hasOwnProperty([scheduleTypes[schedule.typeKey].slug])) {
+                results[scheduleTypes[schedule.typeKey].slug] = []
+              }
+              results[scheduleTypes[schedule.typeKey].slug].push({
+                name: schedule.name,
+                id: schedule.id
+              })
             }
-            results[scheduleTypes[schedule.typeKey].slug].push({
-              name: schedule.name,
-              id: schedule.id
-            })
           }
         }
+      })
+
+      // Remove any remaining colon's
+      while (titleString.indexOf(':') > -1) {
+        titleString = titleString.replace(':', '')
       }
+      // Clean the title, and if it is tied to a course, set the title to the course's title
+      results.title = guarenteedTitle ? guarenteedTitle : cleanSpacesFromString(titleString)
+
+      lessons.push(results)
     })
 
-    // Remove any remaining colon's
-    while (title.indexOf(':') > -1) {
-      title = title.replace(':', '')
-    }
-    // Clean the title, and if it is tied to a course, set the title to the course's title
-    results.title = guarenteedTitle ? guarenteedTitle : cleanSpacesFromString(title)
-  
-    return results
+    return lessons
   }
 
   return {

@@ -283,7 +283,6 @@ router.get('/:schoolSlug/:typeSlug/:uuid', (req, res) => {
         result.currentLessons = []
         
         const now = moment()
-        const lessons = []
         data.forEach(lesson => {
           const start = moment(lesson.startTime)
           const end = moment(lesson.endTime)
