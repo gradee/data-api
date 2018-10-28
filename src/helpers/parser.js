@@ -525,6 +525,11 @@ function Parser() {
   function parseLessonTitle(title, typeKey, schedules, courseList) {
     const originalTitle = title
 
+    // Remove time of year indicator (Läsår, Vt, Ht)
+    title = title.replace('Läsår', '')
+    title = title.replace('Vt', '')
+    title = title.replace('Ht', '')
+
     // Remove any comma's before parsing.
     while (title.indexOf(',') > -1) {
       title = title.replace(',', ' ')
@@ -550,6 +555,8 @@ function Parser() {
 
     const lessons = []
     lessonStrings.forEach(titleString => {
+      if (!titleString) return
+      
       const results = {
         title: ''
       }

@@ -191,7 +191,7 @@ function Nova() {
                     if (a.startTime < b.startTime) return -1
                     return 0
                   })
-          
+                  
                   return resolve(lessons)
                 })
               })
