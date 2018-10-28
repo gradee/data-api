@@ -10,7 +10,9 @@
     "dbsync": "node src/scripts/synchronize-database.js",
     "novaup": "node src/jobs/nova-updater.js"
   },
-  "keywords": [ "api" ],
+  "keywords": [
+    "api"
+  ],
   "license": "MIT",
   "dependencies": {
     "async": "^2.6.1",

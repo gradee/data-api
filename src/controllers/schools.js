@@ -277,7 +277,7 @@ router.get('/:schoolSlug/:typeSlug/:uuid', (req, res) => {
           name: schedule.name
         }
         if (schedule.firstName) result.firstName = schedule.firstName
-        if (schedule.lastName) result.firstName = schedule.lastName
+        if (schedule.lastName) result.lastName = schedule.lastName
         if (schedule.initials) result.initials = schedule.initials
         if (schedule.className) result.className = schedule.className
         result.currentLessons = []
