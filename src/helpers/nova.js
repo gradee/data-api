@@ -173,6 +173,7 @@ function Nova() {
                     if (schedules) {
                       let lessonDataList = Parser.parseLessonTitle(lesson.meta.text, schedule.typeKey, schedules, courses)
                       lessonDataList.forEach(lessonData => {
+                        lessonData.backgroundColor = lesson.meta.color
                         lessonData.startTime = lesson.meta.startTime.toISO()
                         lessonData.endTime = lesson.meta.endTime.toISO()
                         lessons.push(lessonData)
@@ -180,6 +181,7 @@ function Nova() {
                     } else {
                       lessons.push({
                         title: lesson.meta.text,
+                        backgroundColor: lesson.meta.color,
                         startTime: lesson.meta.startTime.toISO(),
                         endTime: lesson.meta.endTime.toISO()
                       })
