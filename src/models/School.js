@@ -24,6 +24,12 @@ module.exports = (connection, DataTypes) => {
       allowNull: true,
       field: 'nova_code'
     },
+    novaWeekSupport: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      field: 'nova_week_support',
+      defaultValue: true
+    },
     novaDataUpdatedAt: {
       type: DataTypes.DATE,
       field: 'nova_data_updated_at'

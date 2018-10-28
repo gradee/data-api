@@ -41,9 +41,10 @@ function School() {
     })
   }
   
-  function setSchoolUpdateDate(schoolId) {
+  function updateNovaMetaData(schoolId, weekSupport) {
     return new Promise((resolve, reject) => {
       models.School.update({
+        novaWeekSupport: weekSupport,
         novaDataUpdatedAt: moment().format('YYYY-MM-DD HH:mm:ss')
       }, {
         where: {
@@ -62,18 +63,17 @@ function School() {
 
         // Download the school's data from Nova
         Nova.downloadSchoolData(school).then(data => {
+          const weekSupport = (data.weeks.length > 0)
                     
           // Fix the data to better suit storing in the database.
-          const schedules = Nova.prepareSchoolData(data, school.id)
+          const schedules = Nova.prepareSchoolData(data.types, school.id)
 
           // Remove old schedules that don't exist on Nova anymore.
           const idList = schedules.map((schedule, i) => schedule.uuid)
-
-          idList.splice(idList.indexOf('5B219A86-4AAB-4DA8-8946-EF3C156DCFA0'), 1)
           
           removeOldSchedules(idList, school.id)
             .then(upsertSchedules(schedules))
-            .then(setSchoolUpdateDate(school.id))
+            .then(updateNovaMetaData(school.id, weekSupport))
             .then(_ => resolve(true))
           .catch(error => reject(error))
         })

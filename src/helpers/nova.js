@@ -36,10 +36,9 @@ function Nova() {
    * PDF methods
    */
 
-  function downloadSchedule(novaId, schedule, week) {
+  function downloadSchedule(school, schedule, week) {
     return new Promise((resolve, reject) => {
-      const pdfUrl = Factory.generateNovaPdfUrl(novaId, schedule.typeKey, schedule.uuid, week)
-      console.log(pdfUrl)
+      const pdfUrl = Factory.generateNovaPdfUrl(school.novaId, schedule.typeKey, schedule.uuid, school.novaWeekSupport ? week : '')
 
       http.get(pdfUrl, (res) => {
         if (res.statusCode === 200) {
@@ -119,24 +118,33 @@ function Nova() {
 
   function ensureLocalSchedule(school, schedule, week) {
     return new Promise((resolve, reject) => {
+      const currentWeek = luxon.DateTime.local().setZone('Europe/Stockholm').get('weekNumber')
       const file = storagePath + '/' + schedule.uuid + '_' + week + '.pdf'
       fs.access(file, fs.constants.F_OK, (err) => {
         if (!err) {
           checkScheduleWeekUpdate(school, schedule, week)
             .then(needsUpdate => {
-              if (!needsUpdate) return resolve()
+              if (!needsUpdate) return resolve(true)
 
-              downloadSchedule(school.novaId, schedule, week)
-                .then(_ => upsertScheduleWeek(schedule, week))
-                .then(_ => resolve())
-              .catch(error => reject(error))
+              if (!school.novaWeekSupport && week !== currentWeek) {
+                resolve(true)
+              } else {
+                downloadSchedule(school, schedule, week)
+                  .then(_ => upsertScheduleWeek(schedule, week))
+                  .then(_ => resolve(true))
+                .catch(error => reject(error))
+              }
             })
           .catch(error => reject(error))
         } else {
-          downloadSchedule(school.novaId, schedule, week)
-            .then(_ => upsertScheduleWeek(schedule, week))
-            .then(_ => resolve())
-          .catch(error => reject(error))
+          if (!school.novaWeekSupport && week !== currentWeek) {
+            resolve(false)
+          } else {
+            downloadSchedule(school, schedule, week)
+              .then(_ => upsertScheduleWeek(schedule, week))
+              .then(_ => resolve(true))
+            .catch(error => reject(error))
+          }
         }
       })
     })
@@ -152,36 +160,44 @@ function Nova() {
         raw: true
       }).then(schedules => {
         ensureLocalSchedule(school, schedule, week)
-          .then(_ => parseSchedule(schedule, week))
-          .then(data => {
-            // Load course list from Skolverket API
-            Skolverket.getCourses(courses => {
-              const lessonList = Parser.parsePdfSchedule(data, week)
-              const lessons = []
-              lessonList.forEach(lesson => {
-                if (schedules) {
-                  let lessonDataList = Parser.parseLessonTitle(lesson.meta.text, schedule.typeKey, schedules, courses)
-                  lessonDataList.forEach(lessonData => {
-                    lessonData.startTime = lesson.meta.startTime.toISO()
-                    lessonData.endTime = lesson.meta.endTime.toISO()
-                    lessons.push(lessonData)
+          .then(exists => {
+            if (!exists) return resolve([])
+            
+            parseSchedule(schedule, week)
+              .then(data => {
+                // Load course list from Skolverket API
+                Skolverket.getCourses(courses => {
+                  const lessonList = Parser.parsePdfSchedule(data, week)
+                  const lessons = []
+                  lessonList.forEach(lesson => {
+                    if (schedules) {
+                      let lessonDataList = Parser.parseLessonTitle(lesson.meta.text, schedule.typeKey, schedules, courses)
+                      lessonDataList.forEach(lessonData => {
+                        lessonData.startTime = lesson.meta.startTime.toISO()
+                        lessonData.endTime = lesson.meta.endTime.toISO()
+                        lessons.push(lessonData)
+                      })
+                    } else {
+                      lessons.push({
+                        title: lesson.meta.text,
+                        startTime: lesson.meta.startTime.toISO(),
+                        endTime: lesson.meta.endTime.toISO()
+                      })
+                    }
                   })
-                } else {
-                  lessons.push({
-                    title: lesson.meta.text,
-                    startTime: lesson.meta.startTime.toISO(),
-                    endTime: lesson.meta.endTime.toISO()
+          
+                  lessons.sort((a, b) => {
+                    if (a.startTime > b.startTime) return 1
+                    if (a.startTime < b.startTime) return -1
+                    return 0
                   })
-                }
+          
+                  return resolve(lessons)
+                })
               })
-      
-              lessons.sort((a, b) => {
-                if (a.startTime > b.startTime) return 1
-                if (a.startTime < b.startTime) return -1
-                return 0
-              })
-      
-              return resolve(lessons)
+            .catch(error => {
+              console.log(error)
+              resolve([])
             })
           })
         .catch(error => {
@@ -248,9 +264,13 @@ function Nova() {
         if (error) return reject(error)
 
         const data = Parser.parseNovaBaseData(body)
-        if (data.complete) return resolve(data.types)
+        if (data.complete) return resolve(data)
 
-        downloadNovaScheduleLists(school, data.types).then(data => resolve(data))
+        downloadNovaScheduleLists(school, data.types).then(types => {
+          data.types = types
+          
+          resolve(data)
+        })
       })
     })
   }

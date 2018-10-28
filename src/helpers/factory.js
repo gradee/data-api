@@ -60,7 +60,7 @@ function Factory() {
     url += '&schoolid=' + novaId
     url += '&type=' + typeKey
     url += '&id=' + '{' + uuid + '}'
-    url += '&week=' + week
+    url += '&week=' + (week ? week : '')
     url += '&period=&mode=0&colors=32&width=2480&height=3500'
     if (!disrupt) url += '&printer=1'
     // If you remove the printer=1, you strip away everything but the schedule, but that would require more work to map out the schedule.

@@ -41,7 +41,7 @@ router.post('/', (req, res) => {
       novaCode: req.body.novaCode || ''
     }).then(school => {
 
-      if (school.novaId && school.novaCode) {
+      if (school.novaId) {
         School.updateNovaData(school, true)
           .then(didUpdate => {
             res.json({
@@ -277,7 +277,7 @@ router.get('/:schoolSlug/:typeSlug/:uuid', (req, res) => {
           name: schedule.name
         }
         if (schedule.firstName) result.firstName = schedule.firstName
-        if (schedule.lastName) result.firstName = schedule.lastName
+        if (schedule.lastName) result.lastName = schedule.lastName
         if (schedule.initials) result.initials = schedule.initials
         if (schedule.className) result.className = schedule.className
         result.currentLessons = []
