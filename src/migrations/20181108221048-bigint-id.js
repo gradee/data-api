@@ -19,8 +19,7 @@ module.exports = {
     return Promise.all([
       upgradeTableColumns(queryInterface, Sequelize, 'schedule_weeks', {
         'schedule_id': {
-          type: Sequelize.BIGINT,
-          allowNull: false
+          type: Sequelize.BIGINT
         },
         'id': {
           type: Sequelize.BIGINT,
@@ -31,7 +30,6 @@ module.exports = {
       upgradeTableColumns(queryInterface, Sequelize, 'schedules', {
         'school_id': {
           type: Sequelize.BIGINT,
-          allowNull: false
         },
         'id': {
           type: Sequelize.BIGINT,
@@ -58,8 +56,7 @@ module.exports = {
       }),
       // Reset Schedule table 'school_id' to BIGING
       queryInterface.changeColumn('schedules', 'school_id', {
-        type: Sequelize.INTEGER,
-        allowNull: false
+        type: Sequelize.INTEGER
       }),
       // Rest ScheduleWeek table 'id' to BIGING
       queryInterface.changeColumn('schedule_weeks', 'id', {
@@ -69,8 +66,7 @@ module.exports = {
       }),
       // Reset ScheduleWeek table 'id' to BIGING
       queryInterface.changeColumn('schedule_weeks', 'schedule_id', {
-        type: Sequelize.INTEGER,
-        allowNull: false
+        type: Sequelize.INTEGER
       }),
       // Reset School table 'id' to BIGING
       queryInterface.changeColumn('schools', 'id', {

@@ -8,7 +8,6 @@ module.exports = (connection, DataTypes) => {
     },
     scheduleId: {
       type: DataTypes.BIGINT,
-      allowNull: false,
       field: 'schedule_id'
     },
     weekNumber: {

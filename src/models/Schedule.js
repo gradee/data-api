@@ -8,7 +8,6 @@ module.exports = (connection, DataTypes) => {
     },
     schoolId: {
       type: DataTypes.BIGINT,
-      allowNull: false,
       field: 'school_id'
     },
     typeKey: {
