@@ -14,7 +14,7 @@ function School() {
 
   function removeOldSchedules(idList, schoolId) {
     return new Promise((resolve, reject) => {
-      models.Schedule.destroy({
+      models.NovaSchedule.destroy({
         where: {
           schoolId: schoolId,
           uuid: {
@@ -30,7 +30,7 @@ function School() {
   function upsertSchedules(schedules) {
     return new Promise((resolve, reject) => {
       async.each(schedules, (schedule, callback) => {
-        models.Schedule.upsert(schedule)
+        models.NovaSchedule.upsert(schedule)
           .then(_ => callback())
         .catch(error => callback(error))
       }, (error) => {

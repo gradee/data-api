@@ -13,7 +13,7 @@ router.get('/', (req, res) => {
 })
 
 router.get('/:uuid', (req, res) => {
-  models.Schedule.findOne({
+  models.NovaSchedule.findOne({
     where: {
       uuid: req.params.uuid
     },
@@ -46,7 +46,7 @@ router.get('/:uuid', (req, res) => {
 })
 
 router.get('/:uuid/pdf', (req, res) => {
-  models.Schedule.findOne({
+  models.NovaSchedule.findOne({
     where: {
       uuid: req.params.uuid
     },

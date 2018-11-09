@@ -30,12 +30,12 @@ files.forEach((file) => {
 /**
  * Declare all relationships.
  */
-m.School.hasMany(m.Schedule, { as: 'schedules', foreignKey: 'school_id' })
-m.Schedule.belongsTo(m.School, { foreignKey: 'school_id' })
+m.School.hasMany(m.NovaSchedule, { as: 'schedules', foreignKey: 'school_id' })
+m.NovaSchedule.belongsTo(m.School, { foreignKey: 'school_id' })
 
-m.Schedule.hasMany(m.ScheduleWeek, { as: 'weeks', foreignKey: 'schedule_id' })
-m.ScheduleWeek.belongsTo(m.Schedule, { foreignKey: 'schedule_id' })
- 
+m.NovaSchedule.hasMany(m.NovaScheduleWeek, { as: 'weeks', foreignKey: 'nova_schedule_id' })
+m.NovaScheduleWeek.belongsTo(m.NovaSchedule, { foreignKey: 'nova_schedule_id' })
+
 
 /**
  * Add all models to the `module.exports` object

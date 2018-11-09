@@ -64,25 +64,25 @@ function Nova() {
 
   function upsertScheduleWeek(schedule, week) {
     return new Promise((resolve, reject) => {
-      models.ScheduleWeek.findOne({
+      models.NovaScheduleWeek.findOne({
         where: {
-          scheduleId: schedule.id,
+          novaScheduleId: schedule.id,
           weekNumber: week
         }
       }).then(result => {
         if (result) {
-          models.ScheduleWeek.update({
+          models.NovaScheduleWeek.update({
             fileUpdatedAt: luxon.DateTime.local().setZone('Europe/Stockholm').toSQL()
           }, {
             where: {
-              scheduleId: schedule.id,
+              novaScheduleId: schedule.id,
               weekNumber: week
             }
           }).then(_ => resolve())
           .catch(error => reject(error))
         } else {
-          models.ScheduleWeek.create({
-            scheduleId: schedule.id,
+          models.NovaScheduleWeek.create({
+            novaScheduleId: schedule.id,
             weekNumber: week,
             fileUpdatedAt: luxon.DateTime.local().setZone('Europe/Stockholm').toSQL()
           }).then(_ => resolve())
@@ -99,15 +99,15 @@ function Nova() {
           id: school.id
         }
       }).then(schoolObj => {
-        models.ScheduleWeek.findOne({
+        models.NovaScheduleWeek.findOne({
           where: {
-            scheduleId: schedule.id,
+            novaScheduleId: schedule.id,
             weekNumber: week
           }
         }).then(scheduleWeek => {
           if (!scheduleWeek) return resolve(true)
-          
-          const schoolDate = moment(schoolObj.novaDataUpdatedAt)          
+
+          const schoolDate = moment(schoolObj.novaDataUpdatedAt)
           const scheduleDate = moment(scheduleWeek.fileUpdatedAt)
 
           resolve(scheduleDate.isBefore(schoolDate))
@@ -152,7 +152,7 @@ function Nova() {
 
   function getScheduleData(school, schedule, week) {
     return new Promise((resolve, reject) => {
-      models.Schedule.findAll({
+      models.NovaSchedule.findAll({
         where: {
           schoolId: school.id
         },
@@ -162,7 +162,7 @@ function Nova() {
         ensureLocalSchedule(school, schedule, week)
           .then(exists => {
             if (!exists) return resolve([])
-            
+
             parseSchedule(schedule, week)
               .then(data => {
                 // Load course list from Skolverket API
@@ -187,13 +187,13 @@ function Nova() {
                       })
                     }
                   })
-          
+
                   lessons.sort((a, b) => {
                     if (a.startTime > b.startTime) return 1
                     if (a.startTime < b.startTime) return -1
                     return 0
                   })
-                  
+
                   return resolve(lessons)
                 })
               })
@@ -270,7 +270,7 @@ function Nova() {
 
         downloadNovaScheduleLists(school, data.types).then(types => {
           data.types = types
-          
+
           resolve(data)
         })
       })
@@ -316,7 +316,7 @@ function Nova() {
         schedule.schoolId = schoolId
         schedule.typeKey = typeObj.key
         delete schedule.id
-        
+
         schedules.push(schedule)
       })
     })

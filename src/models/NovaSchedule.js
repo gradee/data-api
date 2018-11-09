@@ -1,5 +1,5 @@
 module.exports = (connection, DataTypes) => {
-  return connection.define('schedule', {
+  return connection.define('nova_schedule', {
     id: {
       type: DataTypes.BIGINT,
       allowNull: false,
@@ -58,7 +58,7 @@ module.exports = (connection, DataTypes) => {
       field: 'updated_at'
     }
   }, {
-    tableName: 'schedules',
+    tableName: 'nova_schedules',
     timestamps: true,
     indexes: [
       {

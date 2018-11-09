@@ -228,7 +228,7 @@ router.get('/:schoolSlug/:typeSlug', (req, res) => {
   }).then(school => {
     if (!school) return res.status(404).send('Not found.')
 
-    models.Schedule.findAll({
+    models.NovaSchedule.findAll({
       where: {
         schoolId: school.id,
         typeKey: typeKey
@@ -254,7 +254,7 @@ router.get('/:schoolSlug/:typeSlug/:uuid', (req, res) => {
   
   if (!validTypeSlug) return res.status(400).send('Not found.')
 
-  models.Schedule.findOne({
+  models.NovaSchedule.findOne({
     where: {
       uuid: req.params.uuid,
       typeKey: typeKey

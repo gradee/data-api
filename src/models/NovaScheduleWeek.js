@@ -1,14 +1,14 @@
 module.exports = (connection, DataTypes) => {
-  return connection.define('schedule_week', {
+  return connection.define('nova_schedule_week', {
     id: {
       type: DataTypes.BIGINT,
       allowNull: false,
       primaryKey: true,
       autoIncrement: true
     },
-    scheduleId: {
+    novaScheduleId: {
       type: DataTypes.BIGINT,
-      field: 'schedule_id'
+      field: 'nova_schedule_id'
     },
     weekNumber: {
       type: DataTypes.INTEGER,
@@ -31,7 +31,7 @@ module.exports = (connection, DataTypes) => {
       field: 'updated_at'
     }
   }, {
-    tableName: 'schedule_weeks',
+    tableName: 'nova_schedule_weeks',
     timestamps: true
   })
 }
