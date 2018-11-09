@@ -1,13 +1,13 @@
 module.exports = (connection, DataTypes) => {
   return connection.define('schedule', {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: false,
       primaryKey: true,
       autoIncrement: true
     },
     schoolId: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: false,
       field: 'school_id'
     },

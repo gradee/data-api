@@ -1,7 +1,7 @@
 module.exports = (connection, DataTypes) => {
   return connection.define('school', {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.BIGINT,
       allowNull: false,
       primaryKey: true,
       autoIncrement: true
