@@ -10,7 +10,7 @@ const moment = require('moment')
 moment.tz.setDefault('Europe/Stockholm')
 
 // Helpers
-const Factory = require('./factory')
+const Generator = require('./generator')
 const Parser = require('./parser')
 const Skolverket = require('./skolverket')
 
@@ -38,7 +38,7 @@ function Nova() {
 
   function downloadSchedule(school, schedule, week) {
     return new Promise((resolve, reject) => {
-      const pdfUrl = Factory.generateNovaPdfUrl(school.novaId, schedule.typeKey, schedule.uuid, school.novaWeekSupport ? week : '')
+      const pdfUrl = Generator.generateNovaPdfUrl(school.novaId, schedule.typeKey, schedule.uuid, school.novaWeekSupport ? week : '')
 
       http.get(pdfUrl, (res) => {
         if (res.statusCode === 200) {
@@ -246,7 +246,7 @@ function Nova() {
       async.eachOf(types, (type, i, callback) => {
         types[i].name = scheduleTypes[type.key].name
 
-        request(Factory.generateNovaBaseUrl(school.novaId, school.novaCode, type.key), (error, response, body) => {
+        request(Generator.generateNovaBaseUrl(school.novaId, school.novaCode, type.key), (error, response, body) => {
           if (error) return callback(error)
 
           types[i] = Parser.parseNovaTypeData(body, type)
@@ -262,7 +262,7 @@ function Nova() {
 
   function downloadSchoolData(school) {
     return new Promise((resolve, reject) => {
-      request(Factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
+      request(Generator.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
         if (error) return reject(error)
 
         const data = Parser.parseNovaBaseData(body)
@@ -279,7 +279,7 @@ function Nova() {
 
   function getSchoolMetaData(school) {
     return new Promise((resolve, reject) => {
-      request(Factory.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
+      request(Generator.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
         if (error) return reject(error)
 
         const strStart = '<span id="CounterLabel">'

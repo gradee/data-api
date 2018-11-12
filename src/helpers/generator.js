@@ -6,7 +6,7 @@ const request = require('request')
 const moment = require('moment')
 moment.tz.setDefault('Europe/Stockholm')
 
-function Factory() {
+function Generator() {
   const novaViewBaseUrl = 'http://www.novasoftware.se/webviewer/(S(cuybov55kqxjfn45yuspxieg))/MZDesign1.aspx'
   const novaPdfBaseUrl = 'http://www.novasoftware.se/ImgGen/schedulegenerator.aspx?format=pdf'
 
@@ -96,4 +96,4 @@ function Factory() {
   }
 }
 
-module.exports = Factory()
+module.exports = Generator()

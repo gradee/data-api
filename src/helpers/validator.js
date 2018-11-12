@@ -20,10 +20,16 @@ function Validator() {
     return p.test(str)
   }
 
+  function validateEmail(str) {
+    const p = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/
+    return p.test(str)
+  }
+
   return {
     validateName,
     validateSlug,
-    validateNovaValue
+    validateNovaValue,
+    validateEmail
   }
 }
 
