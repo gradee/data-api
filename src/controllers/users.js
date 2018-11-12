@@ -45,9 +45,10 @@ router.post('/', (req, res) => {
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         email: req.body.email,
-        salt: crypto.randomBytes(256).toString('hex')
+        salt: crypto.randomBytes(256).toString('hex'),
+        hashAlgorithm: 'sha512'
       }
-      user.password = crypto.pbkdf2Sync(req.body.password, user.salt, 10000, 512, 'sha512').toString('hex')
+      user.password = crypto.pbkdf2Sync(req.body.password, user.salt, 10000, 512, user.hashAlgorithm).toString('hex')
       
       models.User.create(user)
         .then(results => {

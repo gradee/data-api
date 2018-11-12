@@ -28,6 +28,11 @@ module.exports = (connection, DataTypes) => {
       type: DataTypes.TEXT,
       allowNull: false
     },
+    hashAlgorithm: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      field: 'hash_algorithm'
+    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
