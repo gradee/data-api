@@ -8,6 +8,7 @@ moment.tz.setDefault('Europe/Stockholm')
 const Nova = require('../helpers/nova')
 const Validator = require('../helpers/validator')
 const School = require('../helpers/school')
+const Skola24 = require('../helpers/skola24')
 
 // Models
 const models = require('../models')
@@ -26,8 +27,8 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
   if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
-  if (!req.body.name || !Validator.validateName(req.body.name)) return res.status(400).send('Missing or invalid school name.')
-  if (!req.body.slug || !Validator.validateSlug(req.body.slug)) return res.status(400).send('Missing or invalid school slug.')
+  if (!req.body.name || !Validator.validateName(req.body.name)) return res.status(400).send('Missing or invalid parameter: name.')
+  if (!req.body.slug || !Validator.validateSlug(req.body.slug)) return res.status(400).send('Missing or invalid parameter: slug.')
   if (req.body.novaId && !Validator.validateNovaValue(req.body.novaId)) return res.status(400).send('Invalid Nova ID.')
   if (req.body.novaCode && !Validator.validateNovaValue(req.body.novaCode)) return res.status(400).send('Invalid Nova code.')
 
@@ -64,6 +65,15 @@ router.post('/', (req, res) => {
     console.log(error)
     res.status(500).send('Something went wrong.')
   })
+})
+
+router.post('/import', (req, res) => {
+  if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
+  if (!req.body.source || req.body.source !== 'skola24') return res.status(400).send('Missing or invalid parameter: source.')
+  if (!req.body.url) return res.status(400).send('Missing parameter: url.')
+
+  Skola24.importSchoolsFromUrl(req.body.url)
+  
 })
 
 router.get('/:schoolSlug', (req, res) => {
