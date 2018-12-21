@@ -14,26 +14,6 @@ module.exports = (connection, DataTypes) => {
       type: DataTypes.STRING,
       allowNull: false
     },
-    novaId: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: 'nova_id'
-    },
-    novaCode: {
-      type: DataTypes.STRING,
-      allowNull: true,
-      field: 'nova_code'
-    },
-    novaWeekSupport: {
-      type: DataTypes.BOOLEAN,
-      allowNull: false,
-      field: 'nova_week_support',
-      defaultValue: true
-    },
-    novaDataUpdatedAt: {
-      type: DataTypes.DATE,
-      field: 'nova_data_updated_at'
-    },
     createdAt: {
       type: DataTypes.DATE,
       allowNull: false,
