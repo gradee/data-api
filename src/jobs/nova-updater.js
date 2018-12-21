@@ -10,7 +10,16 @@ const models = require('../models')
 const School = require('../helpers/school')
 
 function updateAllSchoolData(force = false) {
-  models.School.findAll().then(schools => {
+  models.School.findAll({
+    include: [
+      {
+        model: models.NovaSchool,
+        as: 'novaProperties',
+        attributes: [ 'id', 'novaId', 'novaCode', 'novaWeekSupport', 'novaDataUpdatedAt' ],
+        required: true
+      }
+    ]
+  }).then(schools => {
     console.log('')
     console.log('-----------------------------------------------------------------')
     console.log('  Update process started at ' + luxon.DateTime.local().setZone('Europe/Stockholm').toISO())
