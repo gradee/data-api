@@ -20,7 +20,15 @@ router.get('/', (req, res) => {
       'slug'
     ],
     raw: true
-  }).then(schools => res.json(schools))
+  }).then(schools => {
+    schools = schools.sort((a, b) => {
+      if (a.name > b.name) return 1
+      if (a.name < b.name) return -1
+      return 0
+    })
+
+    res.json(schools)
+  })
   .catch(error => {
     console.log(error)
     res.status(500).send('Something went wrong.')
@@ -73,6 +81,18 @@ router.post('/import', (req, res) => {
   if (!req.body.url) return res.status(400).send('Missing parameter: url.')
 
   Skola24.importSchoolsFromUrl(req.body.url)
+    .then(schools => {
+      School.createMultipleWithSkola24(schools)
+        .then(_ => res.json({ success: true }))
+      .catch(error => {
+        console.log(error)
+        res.status(500).send('Something went wrong.')
+      })
+    })
+  .catch(error => {
+    console.log(error)
+    res.status(500).send('Something went wrong.')
+  })
 })
 
 router.get('/:schoolSlug', (req, res) => {

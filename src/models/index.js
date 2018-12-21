@@ -33,6 +33,9 @@ files.forEach((file) => {
 m.School.hasOne(m.NovaSchool, { as: 'novaProperties', foreignKey: 'school_id' })
 m.NovaSchool.belongsTo(m.School, { foreignKey: 'school_id' })
 
+m.School.hasOne(m.Skola24School, { as: 'skola24Properties', foreignKey: 'school_id' })
+m.Skola24School.belongsTo(m.School, { foreignKey: 'school_id' })
+
 m.School.hasMany(m.NovaSchedule, { as: 'novaSchedules', foreignKey: 'school_id' })
 m.NovaSchedule.belongsTo(m.School, { foreignKey: 'school_id' })
 

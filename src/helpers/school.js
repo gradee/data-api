@@ -105,33 +105,41 @@ function School() {
         name: school.name,
         slug: school.slug
       }
-      if (!school.novaProperties) return resolve(data)
+      if (!school.novaProperties && !school.skola24Properties) return resolve(data)
 
-      school.getNovaSchedules().then(schedules => {
-        data.scheduleSource = 'Novaschem'
+      if (school.skola24Properties) {
+        data.scheduleSource = 'Skola24'
         data.schedules = 0
         data.types = []
 
-        schedules.forEach(schedule => {
-          data.schedules += 1
-          const type = Nova.scheduleTypes[schedule.typeKey]
-          if (!data.types.hasOwnProperty(type.slug)) {
-            data.types[type.slug] = {
-              name: type.name,
-              slug: type.slug,
-              schedules: 0
-            }
-          }
-          
-          data.types[type.slug].schedules += 1
-        })
-  
-        for (let key in data.types) {
-          data.types.push(data.types[key])
-        }
-  
         resolve(data)
-      }).catch(error => reject(error))
+      } else {
+        school.getNovaSchedules().then(schedules => {
+          data.scheduleSource = 'Novaschem'
+          data.schedules = 0
+          data.types = []
+  
+          schedules.forEach(schedule => {
+            data.schedules += 1
+            const type = Nova.scheduleTypes[schedule.typeKey]
+            if (!data.types.hasOwnProperty(type.slug)) {
+              data.types[type.slug] = {
+                name: type.name,
+                slug: type.slug,
+                schedules: 0
+              }
+            }
+            
+            data.types[type.slug].schedules += 1
+          })
+    
+          for (let key in data.types) {
+            data.types.push(data.types[key])
+          }
+    
+          resolve(data)
+        }).catch(error => reject(error))
+      }
     })
   }
 
@@ -145,6 +153,11 @@ function School() {
             model: models.NovaSchool,
             as: 'novaProperties',
             attributes: [ 'id', 'novaId', 'novaCode', 'novaWeekSupport', 'novaDataUpdatedAt' ]
+          },
+          {
+            model: models.Skola24School,
+            as: 'skola24Properties',
+            attributes: [ 'id', 'uuid', 'host' ]
           }
         ]
       }).then(school => {
@@ -310,6 +323,13 @@ function School() {
                 if (data.novaschem.code) newNovaProps.novaCode = data.novaschem.code
                 updatePromises.push( Object.keys(newNovaProps).length ? updateSchoolNovaProperties(school, newNovaProps) : deleteNovaProperties(school))
               }
+              // Update Skola24 data
+              if (data.hasOwnProperty('skola24')) {
+                const newSkola24Props = {}
+                if (data.skola24.uuid) newSkola24Props.uuid = data.skola24.uuid
+                if (data.skola24.host) newSkola24Props.host = data.skola24.host
+                updatePromises.push( Object.keys(newSkola24Props).length ? updateSkola24Properties(school, newSkola24Props) : deleteSkola24Properties(school))
+              }
 
               // Run update promises.
               Promise.all(updatePromises)
@@ -322,13 +342,77 @@ function School() {
     })
   }
 
+  function addNew(data) {
+    return new Promise((resolve, reject) => {
+      models.School.create(data)
+        .then(school => resolve(school))
+      .catch(error => reject(error))
+    })
+  }
+
+  function addNewSkola24Properties(data) {
+    return new Promise((resolve, reject) => {
+      models.Skola24School.create(data)
+        .then(_ => resolve())
+      .catch(error => reject(error))
+    })
+  }
+
+  function updateSkola24Properties(school, props) {
+    return new Promise((resolve, reject) => {
+      models.Skola24School.update(props, {
+        where: { schoolId: school.id }
+      }).then(_ => resolve())
+      .catch(error => reject(error))
+    })
+  }
+
+  function deleteSkola24Properties(school) {
+    return new Promise((resolve, reject) => {
+      models.Skola24School.destroy({
+        where: { schoolId: school.id }
+      }).then(_ => resolve())
+      .catch(error => reject(error))
+    })
+  }
+
+  function createMultipleWithSkola24(schools) {
+    return new Promise((resolve, reject) => {
+      // For each school, make sure it's created, or updated if it exists.
+      async.each(schools, (schoolData, callback) => {
+        slugIsUnique(schoolData.slug)
+          .then(result => {
+            if (result.slugIsUnique) {
+              addNew({ name: schoolData.name, slug: schoolData.slug })
+                .then(school => {
+                  addNewSkola24Properties({ schoolId: school.id, uuid: schoolData.skola24.uuid, host: schoolData.skola24.host })
+                    .then(_ => callback())
+                  .catch(error => reject(error))
+                })
+              .catch(error => reject(error))
+            } else {
+              updateBySlug(schoolData.slug, schoolData)
+                .then(_ => callback())
+              .catch(error => {
+                reject(error)
+              })
+            }
+          })
+        .catch(error => reject(error))
+      }, () => {
+        resolve()
+      })
+    })
+  }
+
   return {
     updateNovaData,
     slugIsUnique,
     getBySlug,
     deleteBySlug,
     updateBySlug,
-    updateNovaDataBySlug
+    updateNovaDataBySlug,
+    createMultipleWithSkola24
   }
 }
 
