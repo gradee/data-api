@@ -38,7 +38,7 @@ function Nova() {
 
   function downloadSchedule(school, schedule, week) {
     return new Promise((resolve, reject) => {
-      const pdfUrl = Generator.generateNovaPdfUrl(school.novaId, schedule.typeKey, schedule.uuid, school.novaWeekSupport ? week : '')
+      const pdfUrl = Generator.generateNovaPdfUrl(school.novaProperties.novaId, schedule.typeKey, schedule.uuid, school.novaProperties.novaWeekSupport ? week : '')
 
       http.get(pdfUrl, (res) => {
         if (res.statusCode === 200) {
@@ -126,7 +126,7 @@ function Nova() {
             .then(needsUpdate => {
               if (!needsUpdate) return resolve(true)
 
-              if (!school.novaWeekSupport && week !== currentWeek) {
+              if (!school.novaProperties.novaWeekSupport && week !== currentWeek) {
                 resolve(true)
               } else {
                 downloadSchedule(school, schedule, week)
@@ -137,7 +137,7 @@ function Nova() {
             })
           .catch(error => reject(error))
         } else {
-          if (!school.novaWeekSupport && week !== currentWeek) {
+          if (!school.novaProperties.novaWeekSupport && week !== currentWeek) {
             resolve(false)
           } else {
             downloadSchedule(school, schedule, week)
@@ -246,7 +246,7 @@ function Nova() {
       async.eachOf(types, (type, i, callback) => {
         types[i].name = scheduleTypes[type.key].name
 
-        request(Generator.generateNovaBaseUrl(school.novaId, school.novaCode, type.key), (error, response, body) => {
+        request(Generator.generateNovaBaseUrl(school.novaProperties.novaId, school.novaProperties.novaCode, type.key), (error, response, body) => {
           if (error) return callback(error)
 
           types[i] = Parser.parseNovaTypeData(body, type)
@@ -262,7 +262,7 @@ function Nova() {
 
   function downloadSchoolData(school) {
     return new Promise((resolve, reject) => {
-      request(Generator.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
+      request(Generator.generateNovaBaseUrl(school.novaProperties.novaId, school.novaProperties.novaCode), (error, response, body) => {
         if (error) return reject(error)
 
         const data = Parser.parseNovaBaseData(body)
@@ -279,7 +279,7 @@ function Nova() {
 
   function getSchoolMetaData(school) {
     return new Promise((resolve, reject) => {
-      request(Generator.generateNovaBaseUrl(school.novaId, school.novaCode), (error, response, body) => {
+      request(Generator.generateNovaBaseUrl(school.novaProperties.novaId, school.novaProperties.novaCode), (error, response, body) => {
         if (error) return reject(error)
 
         const strStart = '<span id="CounterLabel">'
@@ -300,7 +300,7 @@ function Nova() {
     return new Promise((resolve, reject) => {
       if (force) return resolve(true)
 
-      const lastUpdate = moment(school.novaDataUpdatedAt)
+      const lastUpdate = moment(school.novaProperties.novaDataUpdatedAt)
       getSchoolMetaData(school).then(metaData => {
         const updatedOn = moment(metaData.updated)
         resolve(updatedOn.isAfter(lastUpdate))

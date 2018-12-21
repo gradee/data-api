@@ -20,8 +20,10 @@ router.get('/', (req, res) => {
       'slug'
     ],
     raw: true
-  }).then(schools => {
-    res.json(schools)
+  }).then(schools => res.json(schools))
+  .catch(error => {
+    console.log(error)
+    res.status(500).send('Something went wrong.')
   })
 })
 
@@ -37,11 +39,9 @@ router.post('/', (req, res) => {
 
     models.School.create({
       name: req.body.name,
-      slug: req.body.slug,
-      novaId: req.body.novaId || '',
-      novaCode: req.body.novaCode || ''
+      slug: req.body.slug
     }).then(school => {
-
+      
       if (school.novaId) {
         School.updateNovaData(school, true)
           .then(didUpdate => {
@@ -73,147 +73,60 @@ router.post('/import', (req, res) => {
   if (!req.body.url) return res.status(400).send('Missing parameter: url.')
 
   Skola24.importSchoolsFromUrl(req.body.url)
-  
 })
 
 router.get('/:schoolSlug', (req, res) => {
-  models.School.findOne({
-    where: {
-      slug: req.params.schoolSlug
-    }
-  }).then(school => {
-    if (!school) return res.status(404).send('Not found.')
-
-    school.getSchedules().then(schedules => {
-      const data = {
-        name: school.name,
-        slug: school.slug,
-        novaId: school.novaId,
-        novaCode: school.novaCode,
-        schedules: 0,
-        types: []
-      }
-
-      const types = {}
-      schedules.forEach(schedule => {
-        data.schedules += 1
-        const type = Nova.scheduleTypes[schedule.typeKey]
-        if (!types.hasOwnProperty(type.slug)) {
-          types[type.slug] = {
-            name: type.name,
-            slug: type.slug,
-            schedules: 0
-          }
-        }
-        
-        types[type.slug].schedules += 1
-      })
-
-      for (let key in types) {
-        data.types.push(types[key])
-      }
-
-      res.json(data)
-    })
+  School.getBySlug(req.params.schoolSlug, true)
+    .then(data => res.json(data))
+  .catch(error => {
+    if (error === 'not-found') return res.status(404).send('Not found.')
+    
+    res.status(500).send('Something went wrong.')
+    console.log(error)
   })
 })
 
 router.post('/:schoolSlug', (req, res) => {
   if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
-  if (!req.body.hasOwnProperty('name') && !req.body.hasOwnProperty('slug') && !req.body.hasOwnProperty('novaId') && !req.body.hasOwnProperty('novaCode')) return res.status(400).send('No parameters sent.')
-
-  models.School.findOne({
-    where: {
-      slug: req.params.schoolSlug
+  
+  School.updateBySlug(req.params.schoolSlug, req.body)
+    .then(_ => res.json({ success: true }))
+  .catch((error, custom = false) => {
+    if (custom) {
+      if (error === 'Not found.') return res.status(404).send('Not found.')
+      return res.status(400).send(error)
     }
-  }).then(school => {
-    if (!school) return res.status(404).send('Not found.')
-
-    // Go through the accepted props and validate them if they have a value.
-    // Name and Slug are required to have a value if specified, novaId and novaCode does not. (allowNull: true / false)
-    if (req.body.hasOwnProperty('name') && !Validator.validateName(req.body.name)) return res.status(400).send('Invalid school name.')
-    if (req.body.hasOwnProperty('slug') && !Validator.validateSlug(req.body.slug)) return res.status(400).send('Invalid school slug.')
-    if (req.body.novaId && !Validator.validateNovaValue(req.body.novaId)) return res.status(400).send('Invalid Nova ID.')
-    if (req.body.novaCode && !Validator.validateNovaValue(req.body.novaCode)) return res.status(400).send('Invalid Nova code.')
-
-    // Make sure the school slug isn't taken.
-    School.slugIsUnique(req.body.slug, school).then(result => {
-      if (!result.slugIsUnique && !result.isCurrentSlug) return res.status(400).send('The slug you provided is already taken.')
-
-      // Build data model based on recevied (or not received) parameters.
-      const data = {}
-      if (req.body.name) data.name = req.body.name
-      if (req.body.slug) data.slug = req.body.slug
-      if (req.body.hasOwnProperty('novaId')) data.novaId = req.body.novaId
-      if (req.body.hasOwnProperty('novaCode')) data.novaCode = req.body.novaCode
-      
-      // Actually update the school's data.
-      models.School.update(data, {
-        where: {
-          id: school.id
-        }
-      }).then(_ => {
-        // Update successful.
-        res.json({ success: true })
-      }).catch(error => {
-        console.log(error)
-        res.status(500).send('Something went wrong.')
-      })
-    }).catch(error => {
-      console.log(error)
-      res.status(500).send('Something went wrong.')
-    })
+    console.log(error)
+    res.status(500).send('Something went wrong.')
   })
 })
 
 router.delete('/:schoolSlug', (req, res) => {
   if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
 
-  models.School.findOne({
-    where: {
-      slug: req.params.schoolSlug
-    }
-  }).then(school => {
-    if (!school) return res.status(404).send('Not found.')
-
-    models.School.destroy({
-      where: {
-        id: school.id
-      }
-    }).then(_ => {
-      res.send({
-        success: true
-      })
-    }).catch(error => {
-      console.log(error)
-      res.status(500).send('Something went wrong.')
+  School.deleteBySlug(req.params.schoolSlug)
+    .then(_ => {
+      res.send({ success: true })
     })
+  .catch(error => {
+    if (error === 'not-found') return res.status(404).send('Not found.')
+      
+    console.log(error)
+    res.status(500).send('Something went wrong.')
   })
 })
 
 router.post('/:schoolSlug/update', (req, res) => {
   if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
-  
-  models.School.findOne({
-    where: {
-      slug: req.params.schoolSlug
-    }
-  }).then(school => {
-    if (!school) return res.status(404).send('Not found.')
 
-    const force = req.body.hasOwnProperty('force') ? req.body.force : false
-    School.updateNovaData(school, force)
-      .then(didUpdate => {
-        res.json({
-          success: true,
-          didUpdate: didUpdate
-        })
-      })
-    .catch(error => {
-      console.log(error)
-      res.status(500).send('Something went wrong.')
+  const force = req.body.hasOwnProperty('force') ? req.body.force : falce
+  School.updateNovaDataBySlug(req.params.schoolSlug, force)
+    .then(didUpdate => {
+      res.json({ success: true, didUpdate: didUpdate })
     })
-  }).catch(error => {
+  .catch(error => {
+    if (error === 'not-found') return res.status(404).send('Not found.')
+
     console.log(error)
     res.status(500).send('Something went wrong.')
   })
@@ -229,7 +142,7 @@ router.get('/:schoolSlug/:typeSlug', (req, res) => {
     }
   })
   
-  if (!validTypeSlug) return res.status(400).send('Not found.')
+  if (!validTypeSlug) return res.status(404).send('Not found.')
 
   models.School.findOne({
     where: {
@@ -269,10 +182,19 @@ router.get('/:schoolSlug/:typeSlug/:uuid', (req, res) => {
       uuid: req.params.uuid,
       typeKey: typeKey
     },
-    include: [{
-      model: models.School,
-      required: true
-    }]
+    include: [
+      {
+        model: models.School,
+        required: true,
+        include: [
+          {
+            model: models.NovaSchool,
+            as: 'novaProperties',
+            attributes: [ 'id', 'novaId', 'novaCode', 'novaWeekSupport', 'novaDataUpdatedAt' ]
+          }
+        ]
+      }
+    ]
   }).then(schedule => {
     if (!schedule) return res.status(404).send('Not found.')
 

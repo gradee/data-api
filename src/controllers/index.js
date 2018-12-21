@@ -3,7 +3,6 @@ const router = require('express').Router()
 
 router.use('/schedule', require('./schedule'))
 router.use('/schools', require('./schools'))
-router.use('/users', require('./users'))
 
 router.get('/', (req, res) => {
   res.json({

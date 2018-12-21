@@ -30,7 +30,10 @@ files.forEach((file) => {
 /**
  * Declare all relationships.
  */
-m.School.hasMany(m.NovaSchedule, { as: 'schedules', foreignKey: 'school_id' })
+m.School.hasOne(m.NovaSchool, { as: 'novaProperties', foreignKey: 'school_id' })
+m.NovaSchool.belongsTo(m.School, { foreignKey: 'school_id' })
+
+m.School.hasMany(m.NovaSchedule, { as: 'novaSchedules', foreignKey: 'school_id' })
 m.NovaSchedule.belongsTo(m.School, { foreignKey: 'school_id' })
 
 m.NovaSchedule.hasMany(m.NovaScheduleWeek, { as: 'weeks', foreignKey: 'nova_schedule_id' })

@@ -1,37 +1,35 @@
 module.exports = (connection, DataTypes) => {
-  return connection.define('user', {
+  return connection.define('nova_school', {
     id: {
       type: DataTypes.BIGINT,
       allowNull: false,
       primaryKey: true,
       autoIncrement: true
     },
-    firstName: {
-      type: DataTypes.STRING,
+    schoolId: {
+      type: DataTypes.BIGINT,
       allowNull: false,
-      field: 'first_name'
+      field: 'school_id'
     },
-    lastName: {
+    novaId: {
       type: DataTypes.STRING,
+      allowNull: true,
+      field: 'nova_id'
+    },
+    novaCode: {
+      type: DataTypes.STRING,
+      allowNull: true,
+      field: 'nova_code'
+    },
+    novaWeekSupport: {
+      type: DataTypes.BOOLEAN,
       allowNull: false,
-      field: 'last_name'
+      field: 'nova_week_support',
+      defaultValue: true
     },
-    email: {
-      type: DataTypes.STRING,
-      allowNull: false
-    },
-    password: {
-      type: DataTypes.TEXT,
-      allowNull: false
-    },
-    salt: {
-      type: DataTypes.TEXT,
-      allowNull: false
-    },
-    hashAlgorithm: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      field: 'hash_algorithm'
+    novaDataUpdatedAt: {
+      type: DataTypes.DATE,
+      field: 'nova_data_updated_at'
     },
     createdAt: {
       type: DataTypes.DATE,
@@ -44,7 +42,7 @@ module.exports = (connection, DataTypes) => {
       field: 'updated_at'
     }
   }, {
-    tableName: 'users',
+    tableName: 'nova_schools',
     timestamps: true
   })
 }

@@ -17,10 +17,19 @@ router.get('/:uuid', (req, res) => {
     where: {
       uuid: req.params.uuid
     },
-    include: [{
-      model: models.School,
-      required: true
-    }]
+    include: [
+      {
+        model: models.School,
+        required: true,
+        include: [
+          {
+            model: models.NovaSchool,
+            as: 'novaProperties',
+            attributes: [ 'id', 'novaId', 'novaCode', 'novaWeekSupport', 'novaDataUpdatedAt' ]
+          }
+        ]
+      }
+    ]
   }).then(schedule => {
     if (!schedule) return res.status(404).send('Not found.')
 
@@ -50,10 +59,19 @@ router.get('/:uuid/pdf', (req, res) => {
     where: {
       uuid: req.params.uuid
     },
-    include: [{
-      model: models.School,
-      required: true
-    }]
+    include: [
+      {
+        model: models.School,
+        required: true,
+        include: [
+          {
+            model: models.NovaSchool,
+            as: 'novaProperties',
+            attributes: [ 'id', 'novaId', 'novaCode', 'novaWeekSupport', 'novaDataUpdatedAt' ]
+          }
+        ]
+      }
+    ]
   }).then(schedule => {
     if (!schedule) return res.status(404).send('Not found.')
 
