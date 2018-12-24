@@ -2,6 +2,7 @@
 const Op = require('sequelize').Op
 const async = require('async')
 const moment = require('moment')
+const { DateTime } = require('luxon')
 
 // Helpers
 const Nova = require('./nova')
@@ -528,6 +529,55 @@ function School() {
     })
   }
 
+  function getScheduleData(school, schedule, week) {
+    return new Promise((resolve, reject) => {
+      if (school.novaProperties) {
+        Nova.getScheduleData(school, schedule, week)
+          .then(data => resolve({ schedule: schedule, data: data }))
+        .catch(error => reject(error))
+      } else {
+        Skola24.getScheduleData(school, schedule, week)
+          .then(data => resolve({ schedule: schedule, data: data }))
+        .catch(error => reject(error))
+      }
+    })
+  }
+
+  function getTypedScheduleData(school, typeSlug, uuid, week) {
+    return new Promise((resolve, reject) => {
+      getTypedScheduleById(school, typeSlug, uuid, [ 'uuid', 'typeKey' ])
+        .then(schedule => {
+          if (!schedule) return reject('not-found')
+          
+          getScheduleData(school, schedule, week)
+            .then(data => resolve(data))
+          .catch(error => reject(error))
+        })
+      .catch(error => reject(error))
+    })
+  }
+
+  function getCurrentScheduleEvent(school, schedule) {
+    return new Promise((resolve, reject) => {
+      const now = DateTime.local().setZone('Europe/Stockholm')
+      getScheduleData(school, schedule, now.get('weekNumber'))
+        .then(results => {
+          if (!results.data.length) return resolve([])
+
+          const lessons = []
+          results.data.forEach(lesson => {
+            const start = DateTime.fromISO(lesson.startTime)
+            const end = DateTime.fromISO(lesson.endTime)
+            if (now >= start && now <= end) {
+              lessons.push(lesson)
+            }
+          })
+          resolve(lessons)
+        })
+      .catch(error => reject(error))
+    })
+  }
+
   return {
     updateNovaData,
     slugIsUnique,
@@ -538,7 +588,9 @@ function School() {
     updateScheduleDataBySlug,
     getSchedulesBySlug,
     getTypedScheduleById,
-    updateSkola24ScheduleData
+    updateSkola24ScheduleData,
+    getTypedScheduleData,
+    getCurrentScheduleEvent
   }
 }
 

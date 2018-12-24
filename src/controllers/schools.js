@@ -1,6 +1,7 @@
 // Router for /schedule
 const router = require('express').Router()
-const luxon = require('luxon')
+const { DateTime } = require('luxon')
+const ical = require('ical-generator')
 
 // Helpers
 const Nova = require('../helpers/nova')
@@ -179,15 +180,26 @@ router.get('/:schoolSlug/:typeSlug/:uuid', (req, res) => {
     .then(school => {
       if (!school) return res.status(400).send('Not found.')
 
-      School.getTypedScheduleById(school, req.params.typeSlug, req.params.uuid)
+      School.getTypedScheduleById(school, req.params.typeSlug, req.params.uuid, [ 'uuid', 'typeKey', 'name', 'firstName', 'lastName', 'initials', 'className' ])
         .then(schedule => {
           if (!schedule) return res.status(400).send('Not found.')
-          // Remove NULL valued properties.
-          for (let key in schedule) {
-            if (!schedule[key]) delete schedule[key]
-          }
-          
-          res.json(schedule)
+
+          School.getCurrentScheduleEvent(school, schedule)
+            .then(lessons => {
+              // Remove NULL valued properties.
+              for (let key in schedule) {
+                if (!schedule[key]) delete schedule[key]
+              }
+              schedule.currentLessons = lessons
+
+              res.json(schedule)
+            })
+          .catch(error => {
+            if (error === 'not-found') return res.status(404).send('Not found.')
+
+            console.log(error)
+            res.status(500).send('Something went wrong.')
+          })
         })
       .catch(error => {
         if (error === 'not-found') return res.status(404).send('Not found.')
@@ -200,76 +212,11 @@ router.get('/:schoolSlug/:typeSlug/:uuid', (req, res) => {
     console.log(error)
     res.status(500).send('Something went wrong.')
   })
-
-  // let typeKey
-  // let validTypeSlug = false
-  // Nova.scheduleTypes.forEach((type, i) => {
-  //   if (type.slug === req.params.typeSlug) {
-  //     validTypeSlug = true
-  //     typeKey = i
-  //   }
-  // })
-  
-  // if (!validTypeSlug) return res.status(400).send('Not found.')
-
-  // models.NovaSchedule.findOne({
-  //   where: {
-  //     uuid: req.params.uuid,
-  //     typeKey: typeKey
-  //   },
-  //   include: [
-  //     {
-  //       model: models.School,
-  //       required: true,
-  //       include: [
-  //         {
-  //           model: models.NovaSchool,
-  //           as: 'novaProperties',
-  //           attributes: [ 'id', 'novaId', 'novaCode', 'novaWeekSupport', 'novaDataUpdatedAt' ]
-  //         }
-  //       ]
-  //     }
-  //   ]
-  // }).then(schedule => {
-  //   if (!schedule) return res.status(404).send('Not found.')
-
-  //   for (let key in schedule) {
-  //     if (schedule[key] === null) delete schedule[key]
-  //   }
-
-  //   Nova.getScheduleData(schedule.school, schedule, luxon.DateTime.local().setZone('Europe/Stockholm').get('weekNumber'))
-  //     .then(data => {
-  //       const result = {
-  //         id: schedule.uuid,
-  //         name: schedule.name
-  //       }
-  //       if (schedule.firstName) result.firstName = schedule.firstName
-  //       if (schedule.lastName) result.lastName = schedule.lastName
-  //       if (schedule.initials) result.initials = schedule.initials
-  //       if (schedule.className) result.className = schedule.className
-  //       result.currentLessons = []
-        
-  //       const now = moment()
-  //       data.forEach(lesson => {
-  //         const start = moment(lesson.startTime)
-  //         const end = moment(lesson.endTime)
-  //         if (now.isSameOrAfter(start) && now.isBefore(end)) {
-  //           result.currentLessons.push(lesson)
-  //         }
-  //       })
-
-  //       res.json(result)
-  //     })
-  //   .catch(error => {
-  //     console.log(error)
-  //     res.status(500).send('Something went wrong.')
-  //   })
-  // })
 })
 
 router.get('/:schoolSlug/:typeSlug/:uuid/schedule', (req, res) => {
   // Grab current week
-  let week = luxon.DateTime.local().setZone('Europe/Stockholm').get('weekNumber')
+  let week = DateTime.local().setZone('Europe/Stockholm').get('weekNumber')
   if (req.query.w) {
     if (!isNaN(+req.query.w) && isFinite(req.query.w)) {
       if (parseInt(req.query.w) > 0 && parseInt(req.query.w) <= 53) {
@@ -279,39 +226,63 @@ router.get('/:schoolSlug/:typeSlug/:uuid/schedule', (req, res) => {
   }
 
   School.getBySlug(req.params.schoolSlug)
-    .then(school => {
-      if (!school) return res.status(400).send('Not found.')
+    .then(school => School.getTypedScheduleData(school, req.params.typeSlug, req.params.uuid, week))
+    .then(results => {
+      res.json(results.data)
+    })
+  .catch(error => {
+    console.log(error)
+    res.status(500).send('Something went wrong.')
+  })
+})
 
-      School.getTypedScheduleById( school, req.params.typeSlug, req.params.uuid, [ 'uuid', 'typeKey' ])
-        .then(schedule => {
-          if (!schedule) return res.status(400).send('Not found.')
-          
-          if (school.novaProperties) {
-            Nova.getScheduleData(school, schedule, week)
-              .then(data => res.json(data))
-            .catch(error => {
-              if (error === 'not-found') return res.status(404).send('Not found.')
+router.get('/:schoolSlug/:typeSlug/:uuid/schedule/ical', (req, res) => {
+  // Grab current week
+  let week = DateTime.local().setZone('Europe/Stockholm').get('weekNumber')
+  if (req.query.w) {
+    if (!isNaN(+req.query.w) && isFinite(req.query.w)) {
+      if (parseInt(req.query.w) > 0 && parseInt(req.query.w) <= 53) {
+        week = parseInt(req.query.w)
+      }
+    }
+  }
 
-              console.log(error)
-              res.status(500).send('Something went wrong.')
-            })
-          } else {
-            Skola24.getScheduleData(school, schedule, week)
-              .then(data => res.json(data))
-            .catch(error => {
-              if (error === 'not-found') return res.status(404).send('Not found.')
-
-              console.log(error)
-              res.status(500).send('Something went wrong.')
-            })
-          }
-        })
-      .catch(error => {
-        if (error === 'not-found') return res.status(404).send('Not found.')
-
-        console.log(error)
-        res.status(500).send('Something went wrong.')
+  School.getBySlug(req.params.schoolSlug)
+    .then(school => School.getTypedScheduleData(school, req.params.typeSlug, req.params.uuid, week))
+    .then(result => {
+      // Set up ical
+      const cal = ical({
+        domain: 'gradee.io',
+        prodId: { company: 'Gradee', product: 'Schedule Data API' },
+        name: result.schedule.name,
+        timezone: 'Europe/Stockholm'
       })
+      const now = new Date()
+
+      result.data.forEach(lesson => {
+        const start = new Date( Date.parse(DateTime.fromISO(lesson.startTime).setZone('Europe/Stockholm').plus({ minutes: now.getTimezoneOffset() }).toHTTP()) )
+        const end = new Date( Date.parse(DateTime.fromISO(lesson.endTime).setZone('Europe/Stockholm').plus({ minutes: now.getTimezoneOffset() }).toHTTP()) )
+        
+        const evt = cal.createEvent({
+          start: start,
+          end: end,
+          summary: lesson.title,
+        })
+        if (lesson.hasOwnProperty('rooms')) {
+          let location = ''
+          lesson.rooms.forEach(room => {
+            if (location) location += ', '
+            location += room.name
+          })
+          evt.location = location
+        }
+      })
+
+      res.set({
+        'Content-Type': 'text/calendar; charset=utf-8',
+        'Content-Disposition': 'inline; filename=schema.ics'
+      })
+      res.send(cal.toString())
     })
   .catch(error => {
     console.log(error)
