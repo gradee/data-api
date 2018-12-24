@@ -558,7 +558,10 @@ function Parser() {
       if (!titleString) return
       
       const results = {
-        title: ''
+        title: '',
+        startTime: '',
+        endTime: '',
+        backgroundColor: ''
       }
 
       let langCourse

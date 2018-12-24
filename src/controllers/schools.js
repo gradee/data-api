@@ -1,8 +1,6 @@
 // Router for /schedule
 const router = require('express').Router()
 const luxon = require('luxon')
-const moment = require('moment')
-moment.tz.setDefault('Europe/Stockholm')
 
 // Helpers
 const Nova = require('../helpers/nova')
@@ -140,7 +138,7 @@ router.post('/:schoolSlug/update', (req, res) => {
   if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
 
   const force = req.body.hasOwnProperty('force') ? req.body.force : falce
-  School.updateNovaDataBySlug(req.params.schoolSlug, force)
+  School.updateScheduleDataBySlug(req.params.schoolSlug, force)
     .then(didUpdate => {
       res.json({ success: true, didUpdate: didUpdate })
     })
@@ -153,102 +151,171 @@ router.post('/:schoolSlug/update', (req, res) => {
 })
 
 router.get('/:schoolSlug/:typeSlug', (req, res) => {
-  let typeKey
-  let validTypeSlug = false
-  Nova.scheduleTypes.forEach((type, i) => {
-    if (type.slug === req.params.typeSlug) {
-      validTypeSlug = true
-      typeKey = i
-    }
-  })
-  
-  if (!validTypeSlug) return res.status(404).send('Not found.')
 
-  models.School.findOne({
-    where: {
-      slug: req.params.schoolSlug
-    }
-  }).then(school => {
-    if (!school) return res.status(404).send('Not found.')
+  School.getBySlug(req.params.schoolSlug)
+    .then(school => {
+      if (!school) return res.status(404).send('Not found.')
 
-    models.NovaSchedule.findAll({
-      where: {
-        schoolId: school.id,
-        typeKey: typeKey
-      },
-      attributes: [['uuid', 'id'], 'name'],
-      raw: true
-    }).then(schedules => {
+      School.getSchedulesBySlug(school, req.params.typeSlug)
+        .then(schedules => {
+          res.json(schedules)
+        })
+      .catch(error => {
+        if (error === 'not-found') return res.status(404).send('Not found.')
 
-      res.json(schedules)
+        console.log(error)
+        res.status(500).send('Something went wrong.')
+      })
     })
+  .catch(error => {
+    console.log(error)
+    res.status(500).send('Something went wrong.')
   })
 })
 
 router.get('/:schoolSlug/:typeSlug/:uuid', (req, res) => {
-  let typeKey
-  let validTypeSlug = false
-  Nova.scheduleTypes.forEach((type, i) => {
-    if (type.slug === req.params.typeSlug) {
-      validTypeSlug = true
-      typeKey = i
-    }
-  })
-  
-  if (!validTypeSlug) return res.status(400).send('Not found.')
 
-  models.NovaSchedule.findOne({
-    where: {
-      uuid: req.params.uuid,
-      typeKey: typeKey
-    },
-    include: [
-      {
-        model: models.School,
-        required: true,
-        include: [
-          {
-            model: models.NovaSchool,
-            as: 'novaProperties',
-            attributes: [ 'id', 'novaId', 'novaCode', 'novaWeekSupport', 'novaDataUpdatedAt' ]
+  School.getBySlug(req.params.schoolSlug)
+    .then(school => {
+      if (!school) return res.status(400).send('Not found.')
+
+      School.getTypedScheduleById(school, req.params.typeSlug, req.params.uuid)
+        .then(schedule => {
+          if (!schedule) return res.status(400).send('Not found.')
+          // Remove NULL valued properties.
+          for (let key in schedule) {
+            if (!schedule[key]) delete schedule[key]
           }
-        ]
-      }
-    ]
-  }).then(schedule => {
-    if (!schedule) return res.status(404).send('Not found.')
+          
+          res.json(schedule)
+        })
+      .catch(error => {
+        if (error === 'not-found') return res.status(404).send('Not found.')
 
-    for (let key in schedule) {
-      if (schedule[key] === null) delete schedule[key]
-    }
+        console.log(error)
+        res.status(500).send('Something went wrong.')
+      })
+    })
+  .catch(error => {
+    console.log(error)
+    res.status(500).send('Something went wrong.')
+  })
 
-    Nova.getScheduleData(schedule.school, schedule, luxon.DateTime.local().setZone('Europe/Stockholm').get('weekNumber'))
-      .then(data => {
-        const result = {
-          id: schedule.uuid,
-          name: schedule.name
-        }
-        if (schedule.firstName) result.firstName = schedule.firstName
-        if (schedule.lastName) result.lastName = schedule.lastName
-        if (schedule.initials) result.initials = schedule.initials
-        if (schedule.className) result.className = schedule.className
-        result.currentLessons = []
+  // let typeKey
+  // let validTypeSlug = false
+  // Nova.scheduleTypes.forEach((type, i) => {
+  //   if (type.slug === req.params.typeSlug) {
+  //     validTypeSlug = true
+  //     typeKey = i
+  //   }
+  // })
+  
+  // if (!validTypeSlug) return res.status(400).send('Not found.')
+
+  // models.NovaSchedule.findOne({
+  //   where: {
+  //     uuid: req.params.uuid,
+  //     typeKey: typeKey
+  //   },
+  //   include: [
+  //     {
+  //       model: models.School,
+  //       required: true,
+  //       include: [
+  //         {
+  //           model: models.NovaSchool,
+  //           as: 'novaProperties',
+  //           attributes: [ 'id', 'novaId', 'novaCode', 'novaWeekSupport', 'novaDataUpdatedAt' ]
+  //         }
+  //       ]
+  //     }
+  //   ]
+  // }).then(schedule => {
+  //   if (!schedule) return res.status(404).send('Not found.')
+
+  //   for (let key in schedule) {
+  //     if (schedule[key] === null) delete schedule[key]
+  //   }
+
+  //   Nova.getScheduleData(schedule.school, schedule, luxon.DateTime.local().setZone('Europe/Stockholm').get('weekNumber'))
+  //     .then(data => {
+  //       const result = {
+  //         id: schedule.uuid,
+  //         name: schedule.name
+  //       }
+  //       if (schedule.firstName) result.firstName = schedule.firstName
+  //       if (schedule.lastName) result.lastName = schedule.lastName
+  //       if (schedule.initials) result.initials = schedule.initials
+  //       if (schedule.className) result.className = schedule.className
+  //       result.currentLessons = []
         
-        const now = moment()
-        data.forEach(lesson => {
-          const start = moment(lesson.startTime)
-          const end = moment(lesson.endTime)
-          if (now.isSameOrAfter(start) && now.isBefore(end)) {
-            result.currentLessons.push(lesson)
+  //       const now = moment()
+  //       data.forEach(lesson => {
+  //         const start = moment(lesson.startTime)
+  //         const end = moment(lesson.endTime)
+  //         if (now.isSameOrAfter(start) && now.isBefore(end)) {
+  //           result.currentLessons.push(lesson)
+  //         }
+  //       })
+
+  //       res.json(result)
+  //     })
+  //   .catch(error => {
+  //     console.log(error)
+  //     res.status(500).send('Something went wrong.')
+  //   })
+  // })
+})
+
+router.get('/:schoolSlug/:typeSlug/:uuid/schedule', (req, res) => {
+  // Grab current week
+  let week = luxon.DateTime.local().setZone('Europe/Stockholm').get('weekNumber')
+  if (req.query.w) {
+    if (!isNaN(+req.query.w) && isFinite(req.query.w)) {
+      if (parseInt(req.query.w) > 0 && parseInt(req.query.w) <= 53) {
+        week = parseInt(req.query.w)
+      }
+    }
+  }
+
+  School.getBySlug(req.params.schoolSlug)
+    .then(school => {
+      if (!school) return res.status(400).send('Not found.')
+
+      School.getTypedScheduleById( school, req.params.typeSlug, req.params.uuid, [ 'uuid', 'typeKey' ])
+        .then(schedule => {
+          if (!schedule) return res.status(400).send('Not found.')
+          
+          if (school.novaProperties) {
+            Nova.getScheduleData(school, schedule, week)
+              .then(data => res.json(data))
+            .catch(error => {
+              if (error === 'not-found') return res.status(404).send('Not found.')
+
+              console.log(error)
+              res.status(500).send('Something went wrong.')
+            })
+          } else {
+            Skola24.getScheduleData(school, schedule, week)
+              .then(data => res.json(data))
+            .catch(error => {
+              if (error === 'not-found') return res.status(404).send('Not found.')
+
+              console.log(error)
+              res.status(500).send('Something went wrong.')
+            })
           }
         })
+      .catch(error => {
+        if (error === 'not-found') return res.status(404).send('Not found.')
 
-        res.json(result)
+        console.log(error)
+        res.status(500).send('Something went wrong.')
       })
-    .catch(error => {
-      console.log(error)
-      res.status(500).send('Something went wrong.')
     })
+  .catch(error => {
+    console.log(error)
+    res.status(500).send('Something went wrong.')
   })
 })
 

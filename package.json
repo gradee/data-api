@@ -8,7 +8,8 @@
     "start": "node src/index.js",
     "dbcreate": "node src/scripts/create-database.js",
     "dbsync": "node src/scripts/synchronize-database.js",
-    "novaup": "node src/jobs/nova-updater.js"
+    "novaup": "node src/jobs/nova-updater.js",
+    "skola24up": "node src/jobs/skola24-updater.js"
   },
   "keywords": [
     "api"

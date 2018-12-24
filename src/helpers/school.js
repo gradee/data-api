@@ -2,11 +2,11 @@
 const Op = require('sequelize').Op
 const async = require('async')
 const moment = require('moment')
-moment.tz.setDefault('Europe/Stockholm')
 
 // Helpers
 const Nova = require('./nova')
 const Validator = require('./validator')
+const Skola24 = require('./skola24')
 
 // Models
 const models = require('../models')
@@ -108,11 +108,33 @@ function School() {
       if (!school.novaProperties && !school.skola24Properties) return resolve(data)
 
       if (school.skola24Properties) {
-        data.scheduleSource = 'Skola24'
-        data.schedules = 0
-        data.types = []
+        school.getSkola24Schedules()
+          .then(schedules => {
+            data.scheduleSource = 'Skola24'
+            data.schedules = 0
+            data.types = []
 
-        resolve(data)
+            schedules.forEach(schedule => {
+              data.schedules += 1
+              const type = Skola24.scheduleTypes[schedule.typeKey]
+              if (!data.types.hasOwnProperty(type.slug)) {
+                data.types[type.slug] = {
+                  name: type.name,
+                  slug: type.slug,
+                  schedules: 0
+                }
+              }
+              
+              data.types[type.slug].schedules += 1
+            })
+      
+            for (let key in data.types) {
+              data.types.push(data.types[key])
+            }
+
+            resolve(data)
+          })
+        .catch(error => reject(error))
       } else {
         school.getNovaSchedules().then(schedules => {
           data.scheduleSource = 'Novaschem'
@@ -224,34 +246,28 @@ function School() {
     })
   }
 
-  function updateNovaDataBySlug(slug, force = false) {
+  function updateNovaScheduleData(school, force = false) {
     return new Promise((resolve, reject) => {
-      getBySlug(slug)
-        .then(school => {
-          if (!school) return reject('not-found')
+      // First of all, make sure it needs updating.
+      Nova.checkSchoolDataUpdate(school)
+        .then(needsUpdate => {
+          if (!needsUpdate && !force) return resolve(false)
 
-          // First of all, make sure it needs updating.
-          Nova.checkSchoolDataUpdate(school)
-            .then(needsUpdate => {
-              if (!needsUpdate && !force) return resolve(false)
+          // Download the school's data from Nova
+          Nova.downloadSchoolData(school)
+            .then(data => {
+              const weekSupport = (data.weeks.length > 0)
+                        
+              // Fix the data to better suit storing in the database.
+              const schedules = Nova.prepareSchoolData(data.types, school.id)
 
-              // Download the school's data from Nova
-              Nova.downloadSchoolData(school)
-                .then(data => {
-                  const weekSupport = (data.weeks.length > 0)
-                            
-                  // Fix the data to better suit storing in the database.
-                  const schedules = Nova.prepareSchoolData(data.types, school.id)
-
-                  // Remove old schedules that don't exist on Nova anymore.
-                  const idList = schedules.map((schedule, i) => schedule.uuid)
-                  
-                  removeOldSchedules(idList, school.id)
-                    .then(upsertSchedules(schedules))
-                    .then(updateNovaMetaData(school.novaProperties.id, weekSupport))
-                    .then(_ => resolve(true))
-                  .catch(error => reject(error))
-                })
+              // Remove old schedules that don't exist on Nova anymore.
+              const idList = schedules.map((schedule, i) => schedule.uuid)
+              
+              removeOldSchedules(idList, school.id)
+                .then(upsertSchedules(schedules))
+                .then(updateNovaMetaData(school.novaProperties.id, weekSupport))
+                .then(_ => resolve(true))
               .catch(error => reject(error))
             })
           .catch(error => reject(error))
@@ -405,14 +421,124 @@ function School() {
     })
   }
 
+  function updateSkola24ScheduleData(school) {
+    return new Promise((resolve, reject) => {
+      Skola24.getSchoolData(school)
+        .then(data => Skola24.updateSchoolData(school, data))
+        .then(_ => resolve(true))
+      .catch(error => reject(error))
+    })
+  }
+
+  function updateScheduleDataBySlug(slug, force = false) {
+    return new Promise((resolve, reject) => {
+      getBySlug(slug)
+        .then(school => {
+          if (!school) return reject('Not found.', true)
+
+          if (school.novaProperties) {
+            updateNovaScheduleData(school, force)
+              .then(didUpdate => resolve(didUpdate))
+            .catch(error => reject(error))
+          } else if (school.skola24Properties) {
+            updateSkola24ScheduleData(school)
+              .then(didUpdate => resolve(didUpdate))
+            .catch(error => reject(error))
+          }
+        })
+      .catch(error => reject(error))
+    })
+  }
+
+  function getSchedulesBySlug(school, typeSlug) {
+    return new Promise((resolve, reject) => {
+      let typeKey
+      let validTypeSlug = false
+      Nova.scheduleTypes.forEach((type, i) => {
+        if (type.slug === typeSlug) {
+          validTypeSlug = true
+          typeKey = i
+        }
+      })
+      if (!validTypeSlug) return reject('not-found')
+
+      if (school.novaProperties) {
+        models.NovaSchedule.findAll({
+          where: {
+            schoolId: school.id,
+            typeKey: typeKey
+          },
+          attributes: [['uuid', 'id'], 'name'],
+          raw: true
+        }).then(schedules => resolve(schedules))
+        .catch(error => reject(error))
+      } else if (school.skola24Properties) {
+        models.Skola24Schedule.findAll({
+          where: {
+            schoolId: school.id,
+            typeKey: typeKey
+          },
+          attributes: [['uuid', 'id'], 'name'],
+          raw: true
+        }).then(schedules => resolve(schedules))
+        .catch(error => reject(error))
+      } else {
+        return reject('not-found')
+      }
+    })
+  }
+
+  function getTypedScheduleById(school, typeSlug, uuid, attributes = null) {
+    return new Promise((resolve, reject) => {
+      let typeKey
+      let validTypeSlug = false
+      Nova.scheduleTypes.forEach((type, i) => {
+        if (type.slug === typeSlug) {
+          validTypeSlug = true
+          typeKey = i
+        }
+      })
+      if (!validTypeSlug) return reject('not-found')
+
+      if (school.novaProperties) {
+        models.NovaSchedule.findOne({
+          where: {
+            uuid: uuid,
+            schoolId: school.id,
+            typeKey: typeKey
+          },
+          attributes: attributes ? attributes : [['uuid', 'id'], 'name', 'firstName', 'lastName', 'initials', 'className'],
+          raw: true
+        }).then(schedule => resolve(schedule))
+        .catch(error => reject(error))
+      } else if (school.skola24Properties) {
+        models.Skola24Schedule.findOne({
+          where: {
+            uuid: uuid,
+            schoolId: school.id,
+            typeKey: typeKey
+          },
+          attributes: attributes ? attributes : [['uuid', 'id'], 'name', 'firstName', 'lastName', 'initials', 'className'],
+          raw: true
+        }).then(schedule => resolve(schedule))
+        .catch(error => reject(error))
+      } else {
+        return reject('not-found')
+      }
+    })
+  }
+
   return {
     updateNovaData,
     slugIsUnique,
     getBySlug,
     deleteBySlug,
     updateBySlug,
-    updateNovaDataBySlug,
-    createMultipleWithSkola24
+    createMultipleWithSkola24,
+    updateScheduleDataBySlug,
+    getSchedulesBySlug,
+    getTypedScheduleById,
+    updateSkola24ScheduleData
   }
 }
 

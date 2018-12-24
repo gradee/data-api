@@ -7,7 +7,6 @@ const http = require('http')
 const fs = require('fs')
 const path = require('path')
 const moment = require('moment')
-moment.tz.setDefault('Europe/Stockholm')
 
 // Helpers
 const Generator = require('./generator')

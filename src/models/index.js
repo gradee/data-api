@@ -39,6 +39,9 @@ m.Skola24School.belongsTo(m.School, { foreignKey: 'school_id' })
 m.School.hasMany(m.NovaSchedule, { as: 'novaSchedules', foreignKey: 'school_id' })
 m.NovaSchedule.belongsTo(m.School, { foreignKey: 'school_id' })
 
+m.School.hasMany(m.Skola24Schedule, { as: 'skola24Schedules', foreignKey: 'school_id' })
+m.Skola24Schedule.belongsTo(m.School, { foreignKey: 'school_id' })
+
 m.NovaSchedule.hasMany(m.NovaScheduleWeek, { as: 'weeks', foreignKey: 'nova_schedule_id' })
 m.NovaScheduleWeek.belongsTo(m.NovaSchedule, { foreignKey: 'nova_schedule_id' })
 
