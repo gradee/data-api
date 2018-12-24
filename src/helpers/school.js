@@ -100,7 +100,7 @@ function School() {
     })
   }
 
-  function getScheduleData(school) {
+  function getSchoolScheduleData(school) {
     return new Promise((resolve, reject) => {
       const data = {
         name: school.name,
@@ -187,7 +187,7 @@ function School() {
         if (!school) return reject('not-found')
         if (!scheduleData) return resolve(school.toJSON())
           
-        getScheduleData(school)
+        getSchoolScheduleData(school)
           .then(data => resolve(data))
         .catch(error => reject(error))
         
