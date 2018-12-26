@@ -10,14 +10,14 @@ The concept is overall the same for the systems with few exceptions, but the pro
 
 Both systems have a list of schedules for each school with a specific type associated to it. The types are according to order: teachers, classes, groups, students, rooms, subjects, courses and aulas. The schedules are all stored in the database for easier and fast query, but the actual schedule data (lessons) are all fetched and parsed on demand.
 
-### Novaschem
+#### Novaschem
 To parse schedule data from Novaschem the API uses the print functionality to parse the PDF output and map out each lesson from the fill elements. And then within each fill element, there are a group of text elements that are thereby associated with the fill element and with that the lesson itself.
 
 The data is then parsed and matched against the list of schedules in Noveschem, for example teachers, classrooms and classes. Finally the [open data from Skolverket](https://skolverket.gradee.io) is used to help determine the correct lesson title by matching the texts to course titles.
 
 The PDFs are also stored locally on the server as a form of cache to more quickly serve the data instead of going directly to Novaschem.
 
-### Skola24
+#### Skola24
 This system actually has a form of "open API" (open as in allows request from any origin), but it lacks public documentation. But thankfully it exists, which makes this process a lot easier.
 
 However, the data that is served from the API when loading schedule data is not in a information friendly format. The format is instead most likely for the engine that they use to draw out the schedule, which is very similar to PDF. This did make it easier though since the format was so similar to the data output for the PDF's from Novaschem (coincidence..?). 
