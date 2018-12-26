@@ -10,7 +10,8 @@ router.get('/', (req, res) => {
       '/schools/:schoolSlug',
       '/schools/:schoolSlug/:typeSlug',
       '/schools/:schoolSlug/:typeSlug/:scheduleId',
-      '/schools/:schoolSlug/:typeSlug/:scheduleId/schedule'
+      '/schools/:schoolSlug/:typeSlug/:scheduleId/schedule',
+      '/schools/:schoolSlug/:typeSlug/:scheduleId/schedule/ical'
     ]
   })
 })
