@@ -138,7 +138,7 @@ router.delete('/:schoolSlug', (req, res) => {
 router.post('/:schoolSlug/update', (req, res) => {
   if (req.headers.authorization !== 'Bearer ' + process.env.AUTH_TOKEN) return res.status(401).send('Unauthorized.')
 
-  const force = req.body.hasOwnProperty('force') ? req.body.force : falce
+  const force = req.body.hasOwnProperty('force') ? req.body.force : false
   School.updateScheduleDataBySlug(req.params.schoolSlug, force)
     .then(didUpdate => {
       res.json({ success: true, didUpdate: didUpdate })
