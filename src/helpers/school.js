@@ -590,7 +590,8 @@ function School() {
     getTypedScheduleById,
     updateSkola24ScheduleData,
     getTypedScheduleData,
-    getCurrentScheduleEvent
+    getCurrentScheduleEvent,
+    updateSchoolNovaProperties,
   }
 }
 

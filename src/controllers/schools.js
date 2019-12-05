@@ -49,12 +49,28 @@ router.post('/', (req, res) => {
       slug: req.body.slug
     }).then(school => {
       
-      if (school.novaId) {
-        School.updateNovaData(school, true)
-          .then(didUpdate => {
-            res.json({
-              success: true,
-              didUpdate: didUpdate
+      if (req.body.hasOwnProperty('novaId')) {
+        const { novaId, novaCode } = req.body;
+        
+        School.updateSchoolNovaProperties(school, { novaId, novaCode })
+          .then(_ => {
+            School.getBySlug(school.slug)
+              .then(school => {
+                School.updateNovaData(school, true)
+                  .then(didUpdate => {
+                    res.json({
+                      success: true,
+                      didUpdate: didUpdate
+                    })
+                  })
+                .catch(error => {
+                  console.log(error)
+                  res.status(500).send('Something went wrong.')
+                })
+              })
+            .catch(error => {
+              console.log(error)
+              res.status(500).send('Something went wrong.')
             })
           })
         .catch(error => {
