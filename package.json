@@ -29,6 +29,6 @@
     "pdf2json": "^1.1.8",
     "request": "^2.88.0",
     "rimraf": "^2.7.1",
-    "sequelize": "^5.15.1"
+    "sequelize": "^6.28.2"
   }
 }
